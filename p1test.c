@@ -18,6 +18,7 @@
 
 #include <umps3/umps/libumps.h>
 #include "./pcb.h"
+#include "./ash.h"
 
 
 
@@ -206,6 +207,25 @@ int main(void) {
 
     addokbuf("insertProcQ, removeProcQ and emptyProcQ ok   \n");
     addokbuf("process queues module ok      \n");
+
+        /* check ASH */
+    initASH();
+    addokbuf("Initialized active semaphore hash   \n");
+
+    /* check removeBlocked and insertBlocked */
+    addokbuf("insertBlocked test #1 started  \n");
+    for (i = 10; i < MAXPROC; i++) {
+        procp[i] = allocPcb();
+        if (insertBlocked(&sem[i], procp[i]))
+            adderrbuf("insertBlocked(1): unexpected TRUE   ");
+    }
+    addokbuf("insertBlocked test #2 started  \n");
+    for (i = 0; i < 10; i++) {
+        procp[i] = allocPcb();
+        if (insertBlocked(&sem[i], procp[i]))
+            adderrbuf("insertBlocked(2): unexpected TRUE   ");
+    }
+    addokbuf("Funzionaaaaaa     ");
 
     return 0;
 }
