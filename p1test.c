@@ -122,16 +122,17 @@ void adderrbuf(char *strp) {
     PANIC();
 }
 
+
 int main(void) {
     int i;
 
     initPcbs();
     addokbuf("Initialized process control blocks   \n");
 
-
-        /* check ASH */
+    /* check ASH */
     initASH();
     addokbuf("Initialized active semaphore hash   \n");
+
 
     /* check removeBlocked and insertBlocked */
     addokbuf("insertBlocked test #1 started  \n");
