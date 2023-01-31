@@ -1,0 +1,4 @@
+Initialized process control blocks   
+Initialized active semaphore hash   
+insertBlocked test #1 started  
+kernel panic()

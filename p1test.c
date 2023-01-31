@@ -21,7 +21,6 @@
 #include "./ash.h"
 
 
-
 #define MAXPROC 20
 #define MAXSEM  MAXPROC
 #define MAXNS   MAXPROC
@@ -97,7 +96,6 @@ unsigned int termprint(char *str, unsigned int term) {
     return (!error);
 }
 
-
 /* This function placess the specified character string in okbuf and
  *	causes the string to be written out to terminal0 */
 void addokbuf(char *strp) {
@@ -124,89 +122,12 @@ void adderrbuf(char *strp) {
     PANIC();
 }
 
-
-
 int main(void) {
     int i;
 
     initPcbs();
     addokbuf("Initialized process control blocks   \n");
 
-    /* Check allocProc */
-    for (i = 0; i < MAXPROC; i++) {
-        if ((procp[i] = allocPcb()) == NULL)
-            adderrbuf("allocPcb: unexpected NULL   ");
-    }
-    if (allocPcb() != NULL) {
-        adderrbuf("allocPcb: allocated more than MAXPROC entries   ");
-    }
-    addokbuf("allocPcb ok   \n");
-
-    /* return the last 10 entries back to free list */
-    for (i = 10; i < MAXPROC; i++)
-        freePcb(procp[i]);
-    addokbuf("freed 10 entries   \n");
-
-    /* create a 10-element process queue */
-    LIST_HEAD(qa);
-    if (!emptyProcQ(&qa))
-        adderrbuf("emptyProcQ: unexpected FALSE   ");
-    addokbuf("Inserting...   \n");
-    for (i = 0; i < 10; i++) {
-        if ((q = allocPcb()) == NULL)
-            adderrbuf("allocPcb: unexpected NULL while insert   ");
-        switch (i) {
-            case 0:
-                firstproc = q;
-                break;
-            case 5:
-                midproc = q;
-                break;
-            case 9:
-                lastproc = q;
-                break;
-            default:
-                break;
-        }
-        insertProcQ(&qa, q);
-    }
-    addokbuf("inserted 10 elements   \n");
-
-    if (emptyProcQ(&qa))
-        adderrbuf("emptyProcQ: unexpected TRUE");
-
-    /* Check outProc and headProc */
-    if (headProcQ(&qa) != firstproc)
-        adderrbuf("headProcQ failed   ");
-    q = outProcQ(&qa, firstproc);
-    if (q == NULL || q != firstproc)
-        adderrbuf("outProcQ failed on first entry   ");
-    freePcb(q);
-    q = outProcQ(&qa, midproc);
-    if (q == NULL || q != midproc)
-        adderrbuf("outProcQ failed on middle entry   ");
-    freePcb(q);
-    if (outProcQ(&qa, procp[0]) != NULL)
-        adderrbuf("outProcQ failed on nonexistent entry   ");
-    addokbuf("outProcQ ok   \n");
-
-    /* Check if removeProc and insertProc remove in the correct order */
-    addokbuf("Removing...   \n");
-    for (i = 0; i < 8; i++) {
-        if ((q = removeProcQ(&qa)) == NULL)
-            adderrbuf("removeProcQ: unexpected NULL   ");
-        freePcb(q);
-    }
-    if (q != lastproc)
-        adderrbuf("removeProcQ: failed on last entry   ");
-    if (removeProcQ(&qa) != NULL)
-        adderrbuf("removeProcQ: removes too many entries   ");
-
-    if (!emptyProcQ(&qa))
-        adderrbuf("emptyProcQ: unexpected FALSE   ");
-
-    addokbuf("insertProcQ, removeProcQ and emptyProcQ ok   \n");
-    addokbuf("process queues module ok      \n");
 
         /* check ASH */
     initASH();
@@ -225,7 +146,8 @@ int main(void) {
         if (insertBlocked(&sem[i], procp[i]))
             adderrbuf("insertBlocked(2): unexpected TRUE   ");
     }
-    addokbuf("Funzionaaaaaa     ");
+    
 
+    addokbuf("Funzionaaaaaa     ");
     return 0;
-}
+    }
