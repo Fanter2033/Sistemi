@@ -125,17 +125,16 @@ void adderrbuf(char *strp) {
 }
 
 
-
 int main(void) {
     int i;
 
     initPcbs();
     addokbuf("Initialized process control blocks   \n");
 
-
     /* check ASH */
     initASH();
     addokbuf("Initialized active semaphore hash   \n");
+
 
     /* check removeBlocked and insertBlocked */
     addokbuf("insertBlocked test #1 started  \n");
@@ -151,6 +150,5 @@ int main(void) {
             adderrbuf("insertBlocked(2): unexpected TRUE   ");
     }
     addokbuf("Funzionaaaaaa     ");
-    
     return 0;
 }

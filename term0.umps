@@ -1,4 +1,12 @@
 Initialized process control blocks   
+allocPcb ok   
+freed 10 entries   
+Inserting...   
+inserted 10 elements   
+outProcQ ok   
+Removing...   
+insertProcQ, removeProcQ and emptyProcQ ok   
+process queues module ok      
 Initialized active semaphore hash   
 insertBlocked test #1 started  
 aggiungo semaforo a ash
@@ -12,14 +20,3 @@ aggiungo pcb a semaforo esistente
 aggiungo pcb a semaforo esistente   
 aggiungo pcb a semaforo esistente   
 insertBlocked test #2 started  
-aggiungo pcb a semaforo esistente   
-aggiungo pcb a semaforo esistente   
-aggiungo pcb a semaforo esistente   
-aggiungo pcb a semaforo esistente   
-aggiungo pcb a semaforo esistente   
-aggiungo pcb a semaforo esistente   
-aggiungo pcb a semaforo esistente   
-aggiungo pcb a semaforo esistente   
-aggiungo pcb a semaforo esistente   
-aggiungo pcb a semaforo esistente   
-Funzionaaaaaa     
