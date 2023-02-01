@@ -122,18 +122,18 @@ void adderrbuf(char *strp) {
     PANIC();
 }
 
-
 int main(void) {
+
     int i;
 
     initPcbs();
     addokbuf("Initialized process control blocks   \n");
-
+    
     /* check ASH */
     initASH();
     addokbuf("Initialized active semaphore hash   \n");
 
-
+    
     /* check removeBlocked and insertBlocked */
     addokbuf("insertBlocked test #1 started  \n");
     for (i = 10; i < MAXPROC; i++) {
@@ -141,6 +141,7 @@ int main(void) {
         if (insertBlocked(&sem[i], procp[i]))
             adderrbuf("insertBlocked(1): unexpected TRUE   ");
     }
+
     addokbuf("insertBlocked test #2 started  \n");
     for (i = 0; i < 10; i++) {
         procp[i] = allocPcb();
@@ -148,7 +149,32 @@ int main(void) {
             adderrbuf("insertBlocked(2): unexpected TRUE   ");
     }
     
+    /* check if semaphore descriptors are returned to free list */
+    addokbuf("insert OKKKK\n");
 
-    addokbuf("Funzionaaaaaa     ");
+    p = removeBlocked(&sem[11]);
+    if (insertBlocked(&sem[11], p))
+        adderrbuf("removeBlocked: fails to return to free list   ");
+
+    if (insertBlocked(&onesem, procp[9]) == FALSE)
+        adderrbuf("insertBlocked: inserted more than MAXPROC   ");
+
+    addokbuf("removeBlocked test started   \n");
+    for (i = 10; i < MAXPROC; i++) {
+        q = removeBlocked(&sem[i]);
+        if (q == NULL)
+            adderrbuf("removeBlocked: wouldn't remove   ");
+        if (q != procp[i])
+            adderrbuf("removeBlocked: removed wrong element   ");
+        if (insertBlocked(&sem[i - 10], q))
+            adderrbuf("insertBlocked(3): unexpected TRUE   ");
+    }
+    if (removeBlocked(&sem[11]) != NULL)
+        adderrbuf("removeBlocked: removed nonexistent blocked proc   ");
+    
+    addokbuf("insertBlocked and removeBlocked ok   \n");
+
     return 0;
+
+
     }
