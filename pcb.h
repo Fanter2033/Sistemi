@@ -27,6 +27,11 @@ pcb_t* allocPcb(){
     pcb_t* nodeToReturn = list_first_entry(&pcbFree_h, struct pcb_t, p_list);
     list_del(pcbFree_h.next);
     /*inizializzare tutti gli elementi a NULL, 0 */
+    nodeToReturn->p_parent=NULL;
+    INIT_LIST_HEAD(&nodeToReturn->p_child);
+    INIT_LIST_HEAD(&nodeToReturn->p_sib);
+    nodeToReturn->p_semAdd=NULL;
+
     return nodeToReturn;
 }
 
@@ -64,13 +69,15 @@ pcb_t* removeProcQ(struct list_head* head){
 /* removes the PCB pointed by p from the PCB queue, if P isn't in the queue then return NULL*/
 pcb_t* outProcQ(struct list_head* head, pcb_t* p){
     struct pcb_t* iterator = NULL;
-    list_for_each_entry(iterator, head, p_list){
+    struct pcb_t* tmpStorage=NULL;
+    struct pcb_t* pcbToReturn=NULL;
+    list_for_each_entry_safe(iterator, tmpStorage, head, p_list){
         if ( iterator == p ){
             list_del(&iterator->p_list);
-            return iterator;
+            pcbToReturn=iterator;
         }
     }
-    return NULL;
+    return pcbToReturn;
 }
 
 #endif //PCB_H

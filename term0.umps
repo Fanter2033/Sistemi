@@ -1,3 +1,5 @@
 Initialized process control blocks   
 Initialized active semaphore hash   
 insertBlocked test #1 started  
+insertBlocked test #2 started  
+insertBlocked: inserted more than MAXPROC   

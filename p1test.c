@@ -129,11 +129,11 @@ int main(void) {
     initPcbs();
     addokbuf("Initialized process control blocks   \n");
     
+
     /* check ASH */
     initASH();
     addokbuf("Initialized active semaphore hash   \n");
 
-    
     /* check removeBlocked and insertBlocked */
     addokbuf("insertBlocked test #1 started  \n");
     for (i = 10; i < MAXPROC; i++) {
@@ -141,17 +141,14 @@ int main(void) {
         if (insertBlocked(&sem[i], procp[i]))
             adderrbuf("insertBlocked(1): unexpected TRUE   ");
     }
-
     addokbuf("insertBlocked test #2 started  \n");
     for (i = 0; i < 10; i++) {
         procp[i] = allocPcb();
         if (insertBlocked(&sem[i], procp[i]))
             adderrbuf("insertBlocked(2): unexpected TRUE   ");
     }
-    
-    /* check if semaphore descriptors are returned to free list */
-    addokbuf("insert OKKKK\n");
 
+    /* check if semaphore descriptors are returned to free list */
     p = removeBlocked(&sem[11]);
     if (insertBlocked(&sem[11], p))
         adderrbuf("removeBlocked: fails to return to free list   ");
@@ -171,10 +168,37 @@ int main(void) {
     }
     if (removeBlocked(&sem[11]) != NULL)
         adderrbuf("removeBlocked: removed nonexistent blocked proc   ");
-    
     addokbuf("insertBlocked and removeBlocked ok   \n");
 
-    return 0;
+    if (headBlocked(&sem[11]) != NULL)
+        adderrbuf("headBlocked: nonNULL for a nonexistent queue   ");
+    if ((q = headBlocked(&sem[9])) == NULL)
+        adderrbuf("headBlocked(1): NULL for an existent queue   ");
+    if (q != procp[9])
+        adderrbuf("headBlocked(1): wrong process returned   ");
+    p = outBlocked(q);
+    if (p != q)
+        adderrbuf("outBlocked(1): couldn't remove from valid queue   ");
+    q = headBlocked(&sem[9]);
+    if (q == NULL)
+        adderrbuf("headBlocked(2): NULL for an existent queue   ");
+    if (q != procp[19])
+        adderrbuf("headBlocked(2): wrong process returned   ");
+    p = outBlocked(q);
+    if (p != q)
+        adderrbuf("outBlocked(2): couldn't remove from valid queue   ");
+    p = outBlocked(q);
+    if (p != NULL)
+        adderrbuf("outBlocked: removed same process twice.");
+    if (headBlocked(&sem[9]) != NULL)
+        adderrbuf("out/headBlocked: unexpected nonempty queue   ");
 
+    for (i = 0; i < MAXPROC; i++)
+        freePcb(procp[i]);
+    
+    addokbuf("headBlocked and outBlocked ok   \n");
+    addokbuf("ASH module ok   \n");
+
+    return 0;
 
     }
