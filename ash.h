@@ -38,14 +38,15 @@ int insertBlocked(int *semAdd, pcb_t *p){
     return 1;
 }
 
-/* return the first pcb from the queue of proc. of SEMD with semAdd as key */
+/* return the first pcb from the queue of proc. of SEMD with semAdd as key, 
+   remove the relative descriptor from the ASH (and relink it in the semdFree_h) */
 pcb_t* removeBlocked(int *semAdd){
     pcb_t* pcbToReturn = NULL;
     semd_t* iterator;
-    struct hlist_node* tmp=NULL;
-    hash_for_each_possible_safe(semd_h,iterator,tmp,s_link,semAdd){
+    struct hlist_node* tmp = NULL;
+    hash_for_each_possible_safe(semd_h,iterator,tmp,s_link,semAdd){ 
         pcbToReturn = removeProcQ(&iterator->s_procq);    
-        pcbToReturn->p_semAdd=NULL;   
+        pcbToReturn->p_semAdd = NULL;   
         if (emptyProcQ(&iterator->s_procq)){
             list_add(&(iterator->s_freelink),&semdFree_h);
             hash_del(&(iterator->s_link));
@@ -54,20 +55,26 @@ pcb_t* removeBlocked(int *semAdd){
     return pcbToReturn;
 }
 
+/* remove the PCB pointed by p (and eventually the semaphore descriptor when the queue is empty) from the queue which is blocked (p->semAdd), 
+if (there is no pcb ) return NULL else return p*/
 pcb_t* outBlocked(pcb_t* p){
     semd_t* iterator;
     struct hlist_node* tmp=NULL;
+
+    pcb_t* pcbToReturn = NULL;
     hash_for_each_possible_safe(semd_h,iterator,tmp,s_link,(p->p_semAdd)){
-        p = outProcQ(&iterator->s_procq,p);
+        pcbToReturn = outProcQ(&iterator->s_procq,p);
 
         if (emptyProcQ(&iterator->s_procq)){
             list_add(&(iterator->s_freelink),&semdFree_h);
             hash_del(&(iterator->s_link));
         }
     }
-    return p;
+    return pcbToReturn;
 }
 
+/* return (without remove) the PCB pointer located in the head of the SEMD proc. queue 
+ if (there isn't the SEMD in ASH || its proc queue is empty) */
 pcb_t* headBlocked(int *semAdd){
     pcb_t* pcbToReturn = NULL;
     semd_t* iterator;

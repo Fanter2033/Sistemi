@@ -12,4 +12,5 @@ insertBlocked test #1 started
 insertBlocked test #2 started  
 removeBlocked test started   
 insertBlocked and removeBlocked ok   
-outBlocked: removed same process twice.
+headBlocked and outBlocked ok   
+ASH module ok   

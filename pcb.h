@@ -70,11 +70,11 @@ pcb_t* removeProcQ(struct list_head* head){
 pcb_t* outProcQ(struct list_head* head, pcb_t* p){
     
     pcb_t* iterator = NULL;
-    pcb_t* tmpStorage=NULL;
-    pcb_t* pcbToReturn=NULL;
+    pcb_t* tmpStorage = NULL;
+    pcb_t* pcbToReturn = NULL;
 
     list_for_each_entry(iterator,head,p_list){
-        if (iterator==p){
+        if (iterator == p){
             list_del(&iterator->p_list);
             return iterator;
         }
