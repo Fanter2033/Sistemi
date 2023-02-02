@@ -68,16 +68,30 @@ pcb_t* removeProcQ(struct list_head* head){
 
 /* removes the PCB pointed by p from the PCB queue, if P isn't in the queue then return NULL*/
 pcb_t* outProcQ(struct list_head* head, pcb_t* p){
-    struct pcb_t* iterator = NULL;
-    struct pcb_t* tmpStorage=NULL;
-    struct pcb_t* pcbToReturn=NULL;
+    
+    pcb_t* iterator = NULL;
+    pcb_t* tmpStorage=NULL;
+    pcb_t* pcbToReturn=NULL;
+
+    list_for_each_entry(iterator,head,p_list){
+        if (iterator==p){
+            list_del(&iterator->p_list);
+            return iterator;
+        }
+    }
+
+    /*
     list_for_each_entry_safe(iterator, tmpStorage, head, p_list){
         if ( iterator == p ){
             list_del(&iterator->p_list);
             pcbToReturn=iterator;
+            pcbToReturn->p_semAdd=NULL;
+            
         }
     }
     return pcbToReturn;
+    */
+    return NULL;
 }
 
 #endif //PCB_H

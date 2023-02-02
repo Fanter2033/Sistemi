@@ -1,5 +1,15 @@
 Initialized process control blocks   
+allocPcb ok   
+freed 10 entries   
+Inserting...   
+inserted 10 elements   
+outProcQ ok   
+Removing...   
+insertProcQ, removeProcQ and emptyProcQ ok   
+process queues module ok      
 Initialized active semaphore hash   
 insertBlocked test #1 started  
 insertBlocked test #2 started  
-insertBlocked: inserted more than MAXPROC   
+removeBlocked test started   
+insertBlocked and removeBlocked ok   
+outBlocked: removed same process twice.

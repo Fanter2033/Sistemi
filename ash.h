@@ -16,8 +16,8 @@ DECLARE_HASHTABLE(semd_h,5);
 /* add PCB pointed by p in the SEMD blocked process with semAdd as key */
 int insertBlocked(int *semAdd, pcb_t *p){
     struct semd_t* iterator; 
-    hash_for_each_possible(semd_h,iterator,s_link,*semAdd){
-        p->p_semAdd=semAdd;
+    hash_for_each_possible(semd_h,iterator,s_link, semAdd){
+        p->p_semAdd = semAdd;
         insertProcQ(&(iterator->s_procq),p);
         return 0;
     }
@@ -28,10 +28,10 @@ int insertBlocked(int *semAdd, pcb_t *p){
         /* node initialization */
         nodeToAdd->s_key = semAdd;
         mkEmptyProcQ(&(nodeToAdd->s_procq)); 
-        p->p_semAdd=semAdd; 
+        p->p_semAdd = semAdd; 
         insertProcQ(&(nodeToAdd->s_procq),p);
 
-        hash_add(semd_h,&(nodeToAdd->s_link), *(nodeToAdd->s_key));
+        hash_add(semd_h,&(nodeToAdd->s_link), (nodeToAdd->s_key));
         list_del(&(nodeToAdd->s_freelink));
         return 0;
     }
@@ -43,7 +43,7 @@ pcb_t* removeBlocked(int *semAdd){
     pcb_t* pcbToReturn = NULL;
     semd_t* iterator;
     struct hlist_node* tmp=NULL;
-    hash_for_each_possible_safe(semd_h,iterator,tmp,s_link,*semAdd){
+    hash_for_each_possible_safe(semd_h,iterator,tmp,s_link,semAdd){
         pcbToReturn = removeProcQ(&iterator->s_procq);    
         pcbToReturn->p_semAdd=NULL;   
         if (emptyProcQ(&iterator->s_procq)){
@@ -57,8 +57,9 @@ pcb_t* removeBlocked(int *semAdd){
 pcb_t* outBlocked(pcb_t* p){
     semd_t* iterator;
     struct hlist_node* tmp=NULL;
-    hash_for_each_possible_safe(semd_h,iterator,tmp,s_link,*(p->p_semAdd)){
+    hash_for_each_possible_safe(semd_h,iterator,tmp,s_link,(p->p_semAdd)){
         p = outProcQ(&iterator->s_procq,p);
+
         if (emptyProcQ(&iterator->s_procq)){
             list_add(&(iterator->s_freelink),&semdFree_h);
             hash_del(&(iterator->s_link));
@@ -70,7 +71,7 @@ pcb_t* outBlocked(pcb_t* p){
 pcb_t* headBlocked(int *semAdd){
     pcb_t* pcbToReturn = NULL;
     semd_t* iterator;
-    hash_for_each_possible(semd_h,iterator,s_link,*semAdd){
+    hash_for_each_possible(semd_h,iterator,s_link,semAdd){
         pcbToReturn=headProcQ(&iterator->s_procq);
     }
     return pcbToReturn;
