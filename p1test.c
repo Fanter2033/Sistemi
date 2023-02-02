@@ -126,10 +126,10 @@ int main(void) {
 
     int i;
 
-    initPcbs();
+     initPcbs();
     addokbuf("Initialized process control blocks   \n");
 
-        /* Check allocProc */
+    /* Check allocProc */
     for (i = 0; i < MAXPROC; i++) {
         if ((procp[i] = allocPcb()) == NULL)
             adderrbuf("allocPcb: unexpected NULL   ");
@@ -205,11 +205,53 @@ int main(void) {
     addokbuf("insertProcQ, removeProcQ and emptyProcQ ok   \n");
     addokbuf("process queues module ok      \n");
 
+    addokbuf("checking process trees...\n");
 
+    if (!emptyChild(procp[2]))
+        adderrbuf("emptyChild: unexpected FALSE   ");
+
+    /* make procp[1] through procp[9] children of procp[0] */
+    addokbuf("Inserting...   \n");
+    for (i = 1; i < 10; i++) {
+        insertChild(procp[0], procp[i]);
+    }
+    addokbuf("Inserted 9 children   \n");
+
+    if (emptyChild(procp[0]))
+        adderrbuf("emptyChild: unexpected TRUE   ");
+
+    addokbuf("emptychildOK\n");
+
+
+    /* Check outChild */
+    q = outChild(procp[1]);
+    addokbuf("preso il primo outChild");
+    if (q == NULL || q != procp[1])
+        adderrbuf("outChild failed on first child   ");
+    q = outChild(procp[4]);
+    if (q == NULL || q != procp[4])
+        adderrbuf("outChild failed on middle child   ");
+    if (outChild(procp[0]) != NULL)
+        adderrbuf("outChild failed on nonexistent child   ");
+    addokbuf("outChild ok   \n");
+
+    /* Check removeChild */
+    addokbuf("Removing...   \n");
+    for (i = 0; i < 7; i++) {
+        if ((q = removeChild(procp[0])) == NULL)
+            adderrbuf("removeChild: unexpected NULL   ");
+    }
+    if (removeChild(procp[0]) != NULL)
+        adderrbuf("removeChild: removes too many children   ");
+
+    if (!emptyChild(procp[0]))
+        adderrbuf("emptyChild: unexpected FALSE   ");
+
+    addokbuf("insertChild, removeChild and emptyChild ok   \n");
+    addokbuf("process tree module ok      \n");
 
     for (i = 0; i < 10; i++)
         freePcb(procp[i]);
-    
 
     /* check ASH */
     initASH();
@@ -276,10 +318,8 @@ int main(void) {
 
     for (i = 0; i < MAXPROC; i++)
         freePcb(procp[i]);
-    
-    
+
     addokbuf("headBlocked and outBlocked ok   \n");
     addokbuf("ASH module ok   \n");
-
     return 0;
     }

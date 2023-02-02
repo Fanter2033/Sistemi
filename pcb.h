@@ -79,19 +79,57 @@ pcb_t* outProcQ(struct list_head* head, pcb_t* p){
             return iterator;
         }
     }
+    return NULL;
+}
 
-    /*
-    list_for_each_entry_safe(iterator, tmpStorage, head, p_list){
-        if ( iterator == p ){
-            list_del(&iterator->p_list);
-            pcbToReturn=iterator;
-            pcbToReturn->p_semAdd=NULL;
-            
+
+/* tree management */
+
+int emptyChild(pcb_t *p){
+    return list_empty(&(p->p_child));
+}
+
+void insertChild(pcb_t *prnt, pcb_t *p){
+    if (emptyChild(prnt)){
+        p->p_parent = prnt;
+        list_add(p,&(prnt->p_child));
+    }
+    else{
+        pcb_t* first_child = list_first_entry(&prnt->p_child,struct pcb_t, p_child);
+        p->p_parent = prnt;
+        list_add(&p->p_sib,&(first_child->p_sib));
+    }
+}
+
+pcb_t* removeChild(pcb_t *p){
+    if (emptyChild(p)) return NULL;
+    pcb_t* first_child = list_first_entry(&p->p_child, struct pcb_t, p_child);
+
+    if (list_empty(&first_child->p_sib)) INIT_LIST_HEAD(&p->p_child);
+    else{
+        p->p_child=first_child->p_sib;
+        list_del(&first_child->p_sib);
+    }
+    first_child->p_parent=NULL;
+    return first_child;
+}
+
+pcb_t* outChild(pcb_t* p){  
+    if (p->p_parent == NULL) return NULL;
+    pcb_t* iterator = NULL;
+    
+    list_for_each_entry(iterator,&(p->p_parent->p_child), p_sib){
+        
+        if (iterator == p){
+            addokbuf("sono nel ciclo e nella condizione\n");
+            if (iterator==list_first_entry(&(p->p_parent->p_child),struct pcb_t,p_child))
+                return removeChild(iterator->p_parent);
+            list_del(&iterator->p_sib);
+            iterator->p_parent=NULL;
+            return iterator;
         }
     }
-    return pcbToReturn;
-    */
-    return NULL;
+    return p;
 }
 
 #endif //PCB_H

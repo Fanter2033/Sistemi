@@ -7,10 +7,7 @@ outProcQ ok
 Removing...   
 insertProcQ, removeProcQ and emptyProcQ ok   
 process queues module ok      
-Initialized active semaphore hash   
-insertBlocked test #1 started  
-insertBlocked test #2 started  
-removeBlocked test started   
-insertBlocked and removeBlocked ok   
-headBlocked and outBlocked ok   
-ASH module ok   
+checking process trees...
+Inserting...   
+Inserted 9 children   
+emptychildOK
