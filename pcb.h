@@ -102,33 +102,46 @@ void insertChild(pcb_t *prnt, pcb_t *p){
 }
 
 pcb_t* removeChild(pcb_t *p){
-    if (emptyChild(p)) return NULL;
+    if (emptyChild(p)) return NULL; //caso: padre non ha figli
     pcb_t* first_child = list_first_entry(&p->p_child, struct pcb_t, p_child);
-
-    if (list_empty(&first_child->p_sib)) INIT_LIST_HEAD(&p->p_child);
-    else{
-        p->p_child=first_child->p_sib;
+ 
+    if (list_empty(&first_child->p_sib)) {
+        INIT_LIST_HEAD(&p->p_child); //caso: un solo figlio
+        addokbuf("\n rimuovo figlio unico");
+        }
+    else{ 
+        p->p_child=first_child->p_sib; //caso: figlio con fratelli
         list_del(&first_child->p_sib);
+        addokbuf("\n rimuovo figlio con fratelli");
     }
     first_child->p_parent=NULL;
     return first_child;
 }
 
 pcb_t* outChild(pcb_t* p){  
+    addokbuf("inizio outchild \n");
     if (p->p_parent == NULL) return NULL;
     pcb_t* iterator = NULL;
+    pcb_t* bucket = NULL;
+
     
-    list_for_each_entry(iterator,&(p->p_parent->p_child), p_sib){
-        
+    list_for_each_entry_safe(iterator,bucket,&(p->p_parent->p_child), p_sib){
+        addokbuf("sono nel ciclo \n");
         if (iterator == p){
             addokbuf("sono nel ciclo e nella condizione\n");
-            if (iterator==list_first_entry(&(p->p_parent->p_child),struct pcb_t,p_child))
+            if (iterator==list_first_entry(&(p->p_parent->p_child),struct pcb_t,p_child)){
+                 addokbuf("sono nel ciclo e nella seconda condizione\n");
                 return removeChild(iterator->p_parent);
+
+            }
+                
             list_del(&iterator->p_sib);
             iterator->p_parent=NULL;
             return iterator;
         }
+        addokbuf("condizione non verificata \n");
     }
+    addokbuf(" finisco il ciclo \n ");
     return p;
 }
 

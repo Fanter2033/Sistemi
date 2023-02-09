@@ -202,14 +202,13 @@ int main(void) {
     if (!emptyProcQ(&qa))
         adderrbuf("emptyProcQ: unexpected FALSE   ");
 
+
     addokbuf("insertProcQ, removeProcQ and emptyProcQ ok   \n");
     addokbuf("process queues module ok      \n");
-
     addokbuf("checking process trees...\n");
 
     if (!emptyChild(procp[2]))
         adderrbuf("emptyChild: unexpected FALSE   ");
-
     /* make procp[1] through procp[9] children of procp[0] */
     addokbuf("Inserting...   \n");
     for (i = 1; i < 10; i++) {
@@ -225,7 +224,7 @@ int main(void) {
 
     /* Check outChild */
     q = outChild(procp[1]);
-    addokbuf("preso il primo outChild");
+    addokbuf("preso il primo outChild ");
     if (q == NULL || q != procp[1])
         adderrbuf("outChild failed on first child   ");
     q = outChild(procp[4]);
