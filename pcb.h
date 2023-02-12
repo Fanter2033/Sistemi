@@ -54,13 +54,13 @@ void insertProcQ(struct list_head* head, pcb_t* p){
 
 /* return the head element from PCB queue, NULL otherwise */
 pcb_t* headProcQ(struct list_head* head){
-    if (list_empty(head)) return NULL;
+    if (emptyProcQ(head)) return NULL;
     return list_first_entry(head, struct pcb_t,p_list);
 }
 
 /* removes and return the first element from PCB queue, return NULL if the queue is empty*/
 pcb_t* removeProcQ(struct list_head* head){
-    if (list_empty(head)) return NULL;
+    if (emptyProcQ(head)) return NULL;
     pcb_t* nodeToReturn = list_first_entry(head, struct pcb_t, p_list);
     list_del(&nodeToReturn->p_list);
     return nodeToReturn;
@@ -69,9 +69,8 @@ pcb_t* removeProcQ(struct list_head* head){
 /* removes the PCB pointed by p from the PCB queue, if P isn't in the queue then return NULL*/
 pcb_t* outProcQ(struct list_head* head, pcb_t* p){
     
+    
     pcb_t* iterator = NULL;
-    pcb_t* tmpStorage = NULL;
-    pcb_t* pcbToReturn = NULL;
 
     list_for_each_entry(iterator,head,p_list){
         if (iterator == p){
@@ -80,68 +79,60 @@ pcb_t* outProcQ(struct list_head* head, pcb_t* p){
         }
     }
     return NULL;
+    
 }
 
 
 /* tree management */
 
 int emptyChild(pcb_t *p){
-    return list_empty(&(p->p_child));
+    return list_empty()
 }
 
-void insertChild(pcb_t *prnt, pcb_t *p){
-    if (emptyChild(prnt)){
-        p->p_parent = prnt;
-        list_add(p,&(prnt->p_child));
+void insertChild(pcb_t* prnt, pcb_t* p){
+
+    if (emptyChild(prnt))   //caso: non ci sono figli
+        prnt->p_child.next= &p->p_child;
+    else {      
+        pcb_t* firstChild = list_first_entry(&prnt->p_child,struct pcb_t,p_child);
+        list_add_tail(&p->p_sib,&firstChild->p_sib);
+        /*
+        inserimento con add : 1->9->8->7...
+        inserimento con add_tail: 1->2->3->...
+        */
     }
-    else{
-        pcb_t* first_child = list_first_entry(&prnt->p_child,struct pcb_t, p_child);
-        p->p_parent = prnt;
-        list_add(&p->p_sib,&(first_child->p_sib));
-    }
+    p->p_parent=prnt;
 }
 
-pcb_t* removeChild(pcb_t *p){
-    if (emptyChild(p)) return NULL; //caso: padre non ha figli
-    pcb_t* first_child = list_first_entry(&p->p_child, struct pcb_t, p_child);
- 
-    if (list_empty(&first_child->p_sib)) {
-        INIT_LIST_HEAD(&p->p_child); //caso: un solo figlio
-        addokbuf("\n rimuovo figlio unico");
-        }
-    else{ 
-        p->p_child=first_child->p_sib; //caso: figlio con fratelli
-        list_del(&first_child->p_sib);
-        addokbuf("\n rimuovo figlio con fratelli");
+
+pcb_t* removeChild(pcb_t* p){
+
+    if (emptyChild(p)) return NULL;
+    pcb_t* firstChild = list_first_entry(&p->p_child,struct pcb_t, p_child);
+
+    if (list_empty(&firstChild->p_sib))       //caso figlio unico
+        INIT_LIST_HEAD (&p->p_child);
+    else {                                  //caso più figli  
+        pcb_t* secondChild = list_first_entry(&firstChild->p_sib,struct pcb_t,p_sib);
+        p->p_child.next = &secondChild->p_child;
+        list_del_init(&firstChild->p_sib); 
     }
-    first_child->p_parent=NULL;
-    return first_child;
+    firstChild->p_parent=NULL;
+    return firstChild;
 }
 
-pcb_t* outChild(pcb_t* p){  
-    addokbuf("inizio outchild \n");
+pcb_t* outChild(pcb_t* p){
     if (p->p_parent == NULL) return NULL;
-    pcb_t* iterator = NULL;
-    pcb_t* bucket = NULL;
 
-    
-    list_for_each_entry_safe(iterator,bucket,&(p->p_parent->p_child), p_sib){
-        addokbuf("sono nel ciclo \n");
-        if (iterator == p){
-            addokbuf("sono nel ciclo e nella condizione\n");
-            if (iterator==list_first_entry(&(p->p_parent->p_child),struct pcb_t,p_child)){
-                 addokbuf("sono nel ciclo e nella seconda condizione\n");
-                return removeChild(iterator->p_parent);
-
-            }
-                
-            list_del(&iterator->p_sib);
-            iterator->p_parent=NULL;
-            return iterator;
-        }
-        addokbuf("condizione non verificata \n");
+    pcb_t* prnt= p->p_parent;
+    pcb_t* firstChild = list_first_entry(&prnt->p_child,struct pcb_t, p_child);
+    if (p == firstChild){       //caso: p è il primo figlio
+        removeChild(prnt);
     }
-    addokbuf(" finisco il ciclo \n ");
+    else {                  //caso: p è un figlio intermedio
+        p->p_parent=NULL;
+        list_del_init(&p->p_sib);
+    }
     return p;
 }
 

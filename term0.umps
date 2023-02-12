@@ -11,6 +11,21 @@ checking process trees...
 Inserting...   
 Inserted 9 children   
 emptychildOK
-inizio outchild 
-sono nel ciclo 
-fine ciclo, condizione non verificata 
+outChild ok   
+Removing...   
+rimosso un processo
+rimosso un processo
+rimosso un processo
+rimosso un processo
+rimosso un processo
+rimosso un processo
+rimosso un processo
+insertChild, removeChild and emptyChild ok   
+process tree module ok      
+Initialized active semaphore hash   
+insertBlocked test #1 started  
+insertBlocked test #2 started  
+removeBlocked test started   
+insertBlocked and removeBlocked ok   
+headBlocked and outBlocked ok   
+ASH module ok   

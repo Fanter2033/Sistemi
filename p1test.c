@@ -223,13 +223,17 @@ int main(void) {
 
 
     /* Check outChild */
+
+    
     q = outChild(procp[1]);
-    addokbuf("preso il primo outChild ");
     if (q == NULL || q != procp[1])
         adderrbuf("outChild failed on first child   ");
     q = outChild(procp[4]);
+    
     if (q == NULL || q != procp[4])
         adderrbuf("outChild failed on middle child   ");
+        
+        
     if (outChild(procp[0]) != NULL)
         adderrbuf("outChild failed on nonexistent child   ");
     addokbuf("outChild ok   \n");
@@ -239,7 +243,10 @@ int main(void) {
     for (i = 0; i < 7; i++) {
         if ((q = removeChild(procp[0])) == NULL)
             adderrbuf("removeChild: unexpected NULL   ");
+        addokbuf("rimosso un processo\n");
     }
+
+
     if (removeChild(procp[0]) != NULL)
         adderrbuf("removeChild: removes too many children   ");
 
@@ -317,7 +324,7 @@ int main(void) {
 
     for (i = 0; i < MAXPROC; i++)
         freePcb(procp[i]);
-
+    
     addokbuf("headBlocked and outBlocked ok   \n");
     addokbuf("ASH module ok   \n");
     return 0;
