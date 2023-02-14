@@ -47,7 +47,7 @@ typedef struct pcb_t {
     int *p_semAdd;
 
     /* Namespace list */
-    nsd_t *namespaces[NS_TYPE_MAX];
+   e
 } pcb_t, *pcb_PTR;
 
 

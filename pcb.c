@@ -104,7 +104,7 @@ pcb_t* outChild(pcb_t* p){
         removeChild(prnt);
     }
     else {                  //caso: p è un figlio intermedio
-        p->p_parent=NULL;
+        p->p_parent = NULL;
         list_del_init(&p->p_sib);
     }
     return p;
