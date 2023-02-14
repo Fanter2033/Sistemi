@@ -10,16 +10,8 @@ process queues module ok
 checking process trees...
 Inserting...   
 Inserted 9 children   
-emptychildOK
 outChild ok   
 Removing...   
-rimosso un processo
-rimosso un processo
-rimosso un processo
-rimosso un processo
-rimosso un processo
-rimosso un processo
-rimosso un processo
 insertChild, removeChild and emptyChild ok   
 process tree module ok      
 Initialized active semaphore hash   

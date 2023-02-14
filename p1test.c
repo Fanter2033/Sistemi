@@ -17,9 +17,8 @@
 #include "./pandos_types.h"
 
 #include <umps3/umps/libumps.h>
-#include "./pcb.h"
-#include "./ash.h"
-
+#include "pcb.h"
+#include "ash.h"
 
 #define MAXPROC 20
 #define MAXSEM  MAXPROC
@@ -126,7 +125,7 @@ int main(void) {
 
     int i;
 
-     initPcbs();
+    initPcbs();
     addokbuf("Initialized process control blocks   \n");
 
     /* Check allocProc */
@@ -202,13 +201,14 @@ int main(void) {
     if (!emptyProcQ(&qa))
         adderrbuf("emptyProcQ: unexpected FALSE   ");
 
-
     addokbuf("insertProcQ, removeProcQ and emptyProcQ ok   \n");
     addokbuf("process queues module ok      \n");
+
     addokbuf("checking process trees...\n");
 
     if (!emptyChild(procp[2]))
         adderrbuf("emptyChild: unexpected FALSE   ");
+
     /* make procp[1] through procp[9] children of procp[0] */
     addokbuf("Inserting...   \n");
     for (i = 1; i < 10; i++) {
@@ -219,21 +219,13 @@ int main(void) {
     if (emptyChild(procp[0]))
         adderrbuf("emptyChild: unexpected TRUE   ");
 
-    addokbuf("emptychildOK\n");
-
-
     /* Check outChild */
-
-    
     q = outChild(procp[1]);
     if (q == NULL || q != procp[1])
         adderrbuf("outChild failed on first child   ");
     q = outChild(procp[4]);
-    
     if (q == NULL || q != procp[4])
         adderrbuf("outChild failed on middle child   ");
-        
-        
     if (outChild(procp[0]) != NULL)
         adderrbuf("outChild failed on nonexistent child   ");
     addokbuf("outChild ok   \n");
@@ -243,10 +235,7 @@ int main(void) {
     for (i = 0; i < 7; i++) {
         if ((q = removeChild(procp[0])) == NULL)
             adderrbuf("removeChild: unexpected NULL   ");
-        addokbuf("rimosso un processo\n");
     }
-
-
     if (removeChild(procp[0]) != NULL)
         adderrbuf("removeChild: removes too many children   ");
 
@@ -258,6 +247,7 @@ int main(void) {
 
     for (i = 0; i < 10; i++)
         freePcb(procp[i]);
+
 
     /* check ASH */
     initASH();
@@ -324,8 +314,8 @@ int main(void) {
 
     for (i = 0; i < MAXPROC; i++)
         freePcb(procp[i]);
-    
+
     addokbuf("headBlocked and outBlocked ok   \n");
     addokbuf("ASH module ok   \n");
     return 0;
-    }
+}
