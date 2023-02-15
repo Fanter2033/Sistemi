@@ -1,5 +1,5 @@
-#ifndef NAMESPACES_H
-#define NAMESPACES_H
+#ifndef NS_H
+#define NS_H
 
 #include "pandos_types.h"
 #include "pandos_const.h"
@@ -12,7 +12,7 @@ HIDDEN struct list_head PID_nsFree_h = LIST_HEAD_INIT(PID_nsFree_h);
 HIDDEN struct list_head PID_nsList_h = LIST_HEAD_INIT(PID_nsList_h);
 
 void initNamespaces(){
-    static nsd_t PID_nsd[MAXPROC];
+    static struct nsd_t PID_nsd[MAXPROC];
     for (int i=0;i<MAXPROC;i++){
         PID_nsd[i].n_type=0;
         list_add(&(PID_nsd[i].n_link),&PID_nsFree_h);
@@ -20,33 +20,34 @@ void initNamespaces(){
 }
 
 nsd_t* getNamespace(pcb_t *p, int type){
-    nsd_t* iterator = NULL;
-    list_for_each_entry(iterator,p->namespaces,n_link){
-        if (iterator->n_type == type){
-            return iterator;
-        }
+    for (int i=0; i<NS_TYPE_MAX; i++){
+    	if (p->namespaces[i]->n_type==type){
+    	    return p->namespaces[i];	
+    	}
     }
     return NULL;
 }
 
 int addNamespace(pcb_t *p, nsd_t *ns){
-    list_add(&ns->n_link,&p->namespaces[ns->n_type]);
-    
-    if (!emptyChild(p)){
-    	pcb_t* firstChild = list_first_entry(&p->p_child,struct pcb_t,p_child); 
-    	list_add(&ns->n_link,&firstChild->namespaces[ns->n_type]);
-    	pcb_t* iterator = NULL;
-    	list_for_each_entry(iterator,&firstChild->p_sib,p_sib){
-        	list_add(&ns->n_link,&iterator->namespaces[ns->n_type]);
-        }
-    	
+    if (p==NULL){
+    	return 0;
     }
-   
+    else {
+    	p->namespaces[ns->n_type]=ns;
+    
+    	if (!emptyChild(p)){
+    		pcb_t* firstChild = list_first_entry(&p->p_child,struct pcb_t,p_child);
+    		firstChild->namespaces[ns->n_type] = ns;
+    		pcb_t* iterator = NULL;
+    		list_for_each_entry(iterator,&firstChild->p_sib,p_sib){
+        		iterator->namespaces[ns->n_type]=ns;
+       	 	}
+    	
+    	}
+    }
     return 1;
 }
 
-/*Attualmente abbiamo solo un tipo di namespace, quando ne
-serviranno di più dovremo avere un array di liste tra cui scegliere */
 
 nsd_t *allocNamespace(int type){
     if (list_empty(&PID_nsFree_h)) return NULL;
@@ -54,11 +55,13 @@ nsd_t *allocNamespace(int type){
     list_del(PID_nsFree_h.next);
     /*inizializzare tutti gli elementi a NULL, 0 */
     nodeToReturn->n_type=0;
+    list_add(&(nodeToReturn->n_link),&PID_nsList_h);
     return nodeToReturn;
 }
 
 void freeNamespace(nsd_t *ns){
     list_add(&(ns->n_link),&PID_nsFree_h);
+    list_del(&(ns->n_link));
 }
 
 
