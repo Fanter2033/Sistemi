@@ -16,11 +16,12 @@ endif
 
 UMPS3_DATA_DIR = $(UMPS3_DIR_PREFIX)/share/umps3
 UMPS3_INCLUDE_DIR = $(UMPS3_DIR_PREFIX)/include/umps3
+UMPS3_TYPE_DIR = ./
 
 # Compiler options
 CFLAGS_LANG = -ffreestanding -ansi
 CFLAGS_MIPS = -mips1 -mabi=32 -mno-gpopt -EL -G 0 -mno-abicalls -fno-pic -mfp32
-CFLAGS = $(CFLAGS_LANG) $(CFLAGS_MIPS) -I$(UMPS3_INCLUDE_DIR) -Wall -O0 -std=gnu99
+CFLAGS = $(CFLAGS_LANG) $(CFLAGS_MIPS) -I$(UMPS3_INCLUDE_DIR) -I$(UMPS3_TYPE_DIR) -Wall -O0 -std=gnu99
 
 # Linker options
 LDFLAGS = -G 0 -nostdlib -T $(UMPS3_DATA_DIR)/umpscore.ldscript -m elf32ltsmip
