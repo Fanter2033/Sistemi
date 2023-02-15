@@ -7,9 +7,9 @@
  *
  ****************************************************************************/
 
-#include <umps3/umps/types.h>
-#include "./pandos_const.h"
-#include "./list.h"
+#include "umps3/umps/types.h"
+#include "pandos_const.h"
+#include "list.h"
 
 
 /* PID namespace */
@@ -47,7 +47,7 @@ typedef struct pcb_t {
     int *p_semAdd;
 
     /* Namespace list */
-   e
+    nsd_t *namespaces[NS_TYPE_MAX];
 } pcb_t, *pcb_PTR;
 
 
