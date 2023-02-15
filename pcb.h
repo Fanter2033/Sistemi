@@ -41,7 +41,7 @@ pcb_t* outProcQ(struct list_head* head, pcb_t* p);
 
 
 
-/* tree management */
+/* -- Tree management -- */
 
 int emptyChild(pcb_t *p);
 
