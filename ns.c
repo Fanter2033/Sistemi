@@ -27,16 +27,16 @@ nsd_t* getNamespace(pcb_t *p, int type){
 
 int addNamespace(pcb_t *p, nsd_t *ns){
     
-    if (p==NULL || ns==NULL) return 0;      //casi errore
+    if (p==NULL || ns==NULL) return 0;      //error cases
 
     p->namespaces[ns->n_type]=ns;
 
     if (!emptyChild(p)){
-        //assegno al primo figlio il namespace del padre
+        //father's namespace is assigned to firstChild's namespace
         pcb_t* firstChild = list_first_entry(&p->p_child,struct pcb_t,p_child);
         firstChild->namespaces[ns->n_type] = ns;
         
-        //assegno ad ogni altro figlio il namespace del padre
+        //father's namespace is assigned to every other child's namespace
         pcb_t* iterator = NULL;
         list_for_each_entry(iterator,&firstChild->p_sib,p_sib){
             iterator->namespaces[ns->n_type]=ns;
@@ -48,11 +48,9 @@ int addNamespace(pcb_t *p, nsd_t *ns){
 
 nsd_t *allocNamespace(int type){
     if (list_empty(&type_nsFree_h[type])) return NULL;
-    //prendo dalla lista dei liberi e aggiungo in lista degli attivi
+    //Namespace is moved from freeList to active list
     nsd_t* nsdToReturn = list_first_entry(&type_nsFree_h[type], struct nsd_t, n_link);
     list_del(type_nsFree_h[type].next);
-    
-    /*scrivere nella documentazione perchè non appare ns_type=type*/
     list_add(&(nsdToReturn->n_link),&type_nsList_h[type]);
     return nsdToReturn;
 }

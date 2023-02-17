@@ -8,13 +8,14 @@ In particolare:
 - gestione dei namespace
 
 # Scelte progettuali
+Nei vari moduli la dichiarazione della rispettiva table avviene nell'inizializzazione.
 
 ## pcb.h
 ### Queue
 Unica nota dell'implementazione riguarda outProcQ. Si è preferito fare il return della funzione nel ciclo per ottimizzare la memoria utilizzata.
 
 ### Tree
-Nell'implementazione degli alberi utilizziamo solamente il campo next del campo p_child del PCB. Utilizzare il campo prev del p_child risulterebbe ridondante in quanto già presente il campo p_parent nel PCB. 
+Nell'implementazione degli alberi utilizziamo solamente il campo next del campo p_child del PCB. Utilizzare il campo prev del p_child risulterebbe ridondante in quanto già presente il campo p_parent nel PCB.  
 Abbiamo preferito chiamare removeChild() da outChild() poichè ci è sembrata la scelta più appropriata. In particolare OutChild chiama la removeChild nel caso in cui il figlio fosse il primo. 
 
 ## ash.h
