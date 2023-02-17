@@ -21,7 +21,7 @@ UMPS3_TYPE_DIR = ./
 # Compiler options
 CFLAGS_LANG = -ffreestanding -ansi
 CFLAGS_MIPS = -mips1 -mabi=32 -mno-gpopt -EL -G 0 -mno-abicalls -fno-pic -mfp32
-CFLAGS = $(CFLAGS_LANG) $(CFLAGS_MIPS) -I$(UMPS3_INCLUDE_DIR) -I$(UMPS3_TYPE_DIR) -Wall -O0 -std=gnu99
+CFLAGS = $(CFLAGS_LANG) $(CFLAGS_MIPS) -I$(UMPS3_INCLUDE_DIR) -I$(UMPS3_TYPE_DIR) -O0 -std=gnu99
 
 # Linker options
 LDFLAGS = -G 0 -nostdlib -T $(UMPS3_DATA_DIR)/umpscore.ldscript -m elf32ltsmip
@@ -31,16 +31,16 @@ VPATH = $(UMPS3_DATA_DIR)
 
 .PHONY : all clean
 
-all : kernel.core.umps
+all : ./machine/kernel.core.umps
 
-kernel.core.umps : kernel
+./machine/kernel.core.umps : ./machine/kernel
 	umps3-elf2umps -k $<
 
-kernel : p1test.o pcb.o ash.o ns.o crtso.o libumps.o
+./machine/kernel : p1test.o pcb.o ash.o ns.o crtso.o libumps.o
 	$(LD) -o $@ $^ $(LDFLAGS)
 
 clean :
-	-rm -f *.o kernel kernel.*.umps
+	-rm -f *.o ./machine/kernel ./machine/kernel.*.umps
 
 # Pattern rule for assembly modules
 %.o : %.S

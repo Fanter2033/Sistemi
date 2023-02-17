@@ -1,11 +1,19 @@
 #include "ns.h" 
 
  void initNamespaces(){
-    static struct nsd_t PID_nsd[MAXPROC];
-    for (int i=0;i<MAXPROC;i++){
-        PID_nsd[i].n_type=0;
-        list_add(&(PID_nsd[i].n_link),&PID_nsFree_h);
-    }
+    static struct nsd_t type_nsd[NS_TYPE_MAX][MAXPROC];    
+
+    for (int i=0;i<NS_TYPE_MAX;i++){
+        /* initialize activeList and freeList*/
+        INIT_LIST_HEAD(&type_nsFree_h[i]);
+        INIT_LIST_HEAD(&type_nsList_h[i]);
+
+        for (int j=0;j<MAXPROC;j++){
+            /* add all namespaces to freeList */
+            type_nsd[i][j].n_type = i;  
+            list_add(&(type_nsd[i][j].n_link),&type_nsFree_h[i]);
+        }
+    } 
 }
 
 nsd_t* getNamespace(pcb_t *p, int type){
@@ -18,36 +26,38 @@ nsd_t* getNamespace(pcb_t *p, int type){
 }
 
 int addNamespace(pcb_t *p, nsd_t *ns){
-    if (p==NULL){
-    	return 0;
-    }
-    else {
-    	p->namespaces[ns->n_type]=ns;
     
-    	if (!emptyChild(p)){
-    		pcb_t* firstChild = list_first_entry(&p->p_child,struct pcb_t,p_child);
-    		firstChild->namespaces[ns->n_type] = ns;
-    		pcb_t* iterator = NULL;
-    		list_for_each_entry(iterator,&firstChild->p_sib,p_sib){
-        		iterator->namespaces[ns->n_type]=ns;
-       	 	}
-    	
-    	}
+    if (p==NULL || ns==NULL) return 0;      //casi errore
+
+    p->namespaces[ns->n_type]=ns;
+
+    if (!emptyChild(p)){
+        //assegno al primo figlio il namespace del padre
+        pcb_t* firstChild = list_first_entry(&p->p_child,struct pcb_t,p_child);
+        firstChild->namespaces[ns->n_type] = ns;
+        
+        //assegno ad ogni altro figlio il namespace del padre
+        pcb_t* iterator = NULL;
+        list_for_each_entry(iterator,&firstChild->p_sib,p_sib){
+            iterator->namespaces[ns->n_type]=ns;
+        }
+    
     }
     return 1;
 }
 
 nsd_t *allocNamespace(int type){
-    if (list_empty(&PID_nsFree_h)) return NULL;
-    nsd_t* nodeToReturn = list_first_entry(&PID_nsFree_h, struct nsd_t, n_link);
-    list_del(PID_nsFree_h.next);
-    /*inizializzare tutti gli elementi a NULL, 0 */
-    nodeToReturn->n_type=0;
-    list_add(&(nodeToReturn->n_link),&PID_nsList_h);
-    return nodeToReturn;
+    if (list_empty(&type_nsFree_h[type])) return NULL;
+    //prendo dalla lista dei liberi e aggiungo in lista degli attivi
+    nsd_t* nsdToReturn = list_first_entry(&type_nsFree_h[type], struct nsd_t, n_link);
+    list_del(type_nsFree_h[type].next);
+    
+    /*scrivere nella documentazione perchè non appare ns_type=type*/
+    list_add(&(nsdToReturn->n_link),&type_nsList_h[type]);
+    return nsdToReturn;
 }
 
 void freeNamespace(nsd_t *ns){
-    list_add(&(ns->n_link),&PID_nsFree_h);
     list_del(&(ns->n_link));
+    list_add(&(ns->n_link),&type_nsFree_h[ns->n_type]);
 }

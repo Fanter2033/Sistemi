@@ -11,7 +11,7 @@ HIDDEN DECLARE_HASHTABLE(semd_h,5);
 HIDDEN struct list_head semdFree_h = LIST_HEAD_INIT(semdFree_h);
 
 /* Additional function : if the semaphore's list of proc. is empty remove it from the ash*/
-static void removeEmptySemd(semd_t* s);
+void removeEmptySemd(semd_t* s);
 
 /* add PCB pointed by p in the SEMD blocked process with semAdd as key */
 int insertBlocked(int *semAdd, pcb_t *p);

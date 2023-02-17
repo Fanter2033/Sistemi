@@ -1,6 +1,6 @@
 #include "ash.h"
 
-static void removeEmptySemd(semd_t* s){
+void removeEmptySemd(semd_t* s){
     if (emptyProcQ(&s->s_procq)){
         hash_del(&(s->s_link));
         list_add(&(s->s_freelink),&semdFree_h);
@@ -10,7 +10,7 @@ static void removeEmptySemd(semd_t* s){
 int insertBlocked(int *semAdd, pcb_t *p){
     if (p->p_semAdd!=NULL) return 1;
     struct semd_t* iterator; 
-    hash_for_each_possible(semd_h,iterator,s_link, semAdd){
+    hash_for_each_possible(semd_h,iterator,s_link, (u32)semAdd){
         p->p_semAdd = semAdd;
         insertProcQ(&iterator->s_procq,p);
         return 0;
@@ -25,7 +25,7 @@ int insertBlocked(int *semAdd, pcb_t *p){
         p->p_semAdd = semAdd; 
         insertProcQ(&semdToAdd->s_procq,p);
 
-        hash_add(semd_h,&semdToAdd->s_link, semdToAdd->s_key);
+        hash_add(semd_h,&semdToAdd->s_link, (u32)semdToAdd->s_key);
         list_del(&semdToAdd->s_freelink);
         return 0;
     }
@@ -36,7 +36,7 @@ pcb_t* removeBlocked(int *semAdd){
     pcb_t* pcbToReturn = NULL;
     semd_t* iterator;
     struct hlist_node* tmp = NULL;
-    hash_for_each_possible_safe(semd_h,iterator,tmp,s_link,semAdd){ 
+    hash_for_each_possible_safe(semd_h,iterator,tmp,s_link, (u32)semAdd){ 
         pcbToReturn = removeProcQ(&iterator->s_procq);    
         pcbToReturn->p_semAdd = NULL;  
 
@@ -48,10 +48,11 @@ pcb_t* removeBlocked(int *semAdd){
 pcb_t* outBlocked(pcb_t* p){
     semd_t* iterator;
     struct hlist_node* tmp=NULL;
-
     pcb_t* pcbToReturn = NULL;
-    hash_for_each_possible_safe(semd_h,iterator,tmp,s_link,(p->p_semAdd)){
+
+    hash_for_each_possible_safe(semd_h,iterator,tmp,s_link,(u32)(p->p_semAdd)){
         pcbToReturn = outProcQ(&iterator->s_procq,p);
+        pcbToReturn->p_semAdd = NULL;
 
         removeEmptySemd(iterator);
     }
@@ -61,7 +62,7 @@ pcb_t* outBlocked(pcb_t* p){
 pcb_t* headBlocked(int *semAdd){
     pcb_t* pcbToReturn = NULL;
     semd_t* iterator;
-    hash_for_each_possible(semd_h,iterator,s_link,semAdd){
+    hash_for_each_possible(semd_h,iterator,s_link,(u32)semAdd){
         pcbToReturn=headProcQ(&iterator->s_procq);
     }
     return pcbToReturn;

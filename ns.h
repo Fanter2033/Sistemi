@@ -3,13 +3,13 @@
 
 #include "pandos_types.h"
 #include "pandos_const.h"
-#include "./ash.h"
+#include "pcb.h"
 
 /* list of active namespace of type "type", in this case the only type is "PID" */
-HIDDEN struct list_head PID_nsFree_h = LIST_HEAD_INIT(PID_nsFree_h);
+HIDDEN struct list_head type_nsFree_h[NS_TYPE_MAX];
  
 /* Active namespaces list*/
-HIDDEN struct list_head PID_nsList_h = LIST_HEAD_INIT(PID_nsList_h);
+HIDDEN struct list_head type_nsList_h[NS_TYPE_MAX];
 
 /* Initialize all free namespaces */
 void initNamespaces();

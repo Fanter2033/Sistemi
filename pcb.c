@@ -11,16 +11,23 @@ void freePcb(pcb_t* p){
 }
 
 pcb_t* allocPcb(){
-    if (list_empty(&pcbFree_h)) return NULL;                                       //case1: there is no more PCB available
+    if (list_empty(&pcbFree_h)) return NULL;  //case1: there is no more PCB available
 
-    pcb_t* nodeToReturn = list_first_entry(&pcbFree_h, struct pcb_t, p_list);      //case2: take first PCB from pcbFree_h
-    list_del(pcbFree_h.next);
-    //initializing parameters  
-    nodeToReturn->p_parent=NULL;              
-    INIT_LIST_HEAD(&nodeToReturn->p_child);
-    INIT_LIST_HEAD(&nodeToReturn->p_sib);
-    nodeToReturn->p_semAdd=NULL;
-    return nodeToReturn;
+    /*case2: take first PCB from pcbFree_h*/
+
+    pcb_t* pcbToReturn = list_first_entry(&pcbFree_h, struct pcb_t, p_list);      
+    list_del(&pcbToReturn->p_list);
+
+    /* initializing parameters */
+    pcbToReturn->p_parent=NULL;              
+    INIT_LIST_HEAD(&pcbToReturn->p_child);
+    INIT_LIST_HEAD(&pcbToReturn->p_sib);
+    pcbToReturn->p_semAdd=NULL;
+    for (int i=0;i<NS_TYPE_MAX;i++){
+        pcbToReturn->namespaces[i]=NULL;      
+    }
+
+    return pcbToReturn;
 }
 
 void mkEmptyProcQ(struct list_head *head){
@@ -41,48 +48,45 @@ pcb_t* headProcQ(struct list_head* head){
 }
 
 pcb_t* removeProcQ(struct list_head* head){
-    if (emptyProcQ(head)) return NULL;                                             //case1: no pcb to reomve
+    if (emptyProcQ(head)) return NULL;  //case1: no pcb to remove
+    /* case2: del first pcb from the list */
 
-    pcb_t* nodeToReturn = list_first_entry(head, struct pcb_t, p_list);            //case2: del first pcb from the list
-    list_del(&nodeToReturn->p_list);
-    return nodeToReturn;
+    pcb_t* pcbToReturn = list_first_entry(head, struct pcb_t, p_list);           
+    list_del(&pcbToReturn->p_list);
+    return pcbToReturn;
 }
 
 pcb_t* outProcQ(struct list_head* head, pcb_t* p){
     pcb_t* iterator = NULL;
-    int p_inlist = 0;
     list_for_each_entry(iterator,head,p_list){
-        if (iterator == p){               // p is in the list
+        if (iterator == p){      // p is in the list
             list_del(&iterator->p_list);
-            p_inlist = 1; break;
+            return iterator;
         }
     }
-    if(p_inlist) return iterator;
-    else         return NULL;
-}
+    return NULL;
+}    
 
 int emptyChild(pcb_t *p){
-    return p->p_child.next == &p->p_child;
+    return list_empty(&p->p_child);
 }
 
 void insertChild(pcb_t* prnt, pcb_t* p){
-    if (emptyChild(prnt))                                                          //case1: no child, p in the first
-        prnt->p_child.next = &p->p_child;
-    else {      
-        pcb_t* firstChild = list_first_entry(&prnt->p_child,struct pcb_t,p_child); //case2: p will be in the sib list of the child
+    if (emptyChild(prnt)) prnt->p_child.next = &p->p_child; //case1: no child, p in the first
+    else {          //case2: p will be in the sib list of the child
+        pcb_t* firstChild = list_first_entry(&prnt->p_child,struct pcb_t,p_child); 
         list_add_tail(&p->p_sib,&firstChild->p_sib);
     }
     p->p_parent=prnt;
 }
 
 pcb_t* removeChild(pcb_t* p){
-    if (emptyChild(p)) return NULL;                                                //case1:  no child
+    if (emptyChild(p)) return NULL;   //case1: p has no child
     
     pcb_t* firstChild = list_first_entry(&p->p_child,struct pcb_t, p_child);
-    if (list_empty(&firstChild->p_sib))                                            //case2: p is only child
-        INIT_LIST_HEAD (&p->p_child);
-    else {                                                                         //case2: more children, p' sib become the child of the father
-        pcb_t* secondChild = list_first_entry(&firstChild->p_sib,struct pcb_t,p_sib);
+    if (list_empty(&firstChild->p_sib)) INIT_LIST_HEAD (&p->p_child);   //case2: firstChild is only child
+    else {   //case3: more children
+        pcb_t* secondChild = list_first_entry(&firstChild->p_sib,struct pcb_t,p_sib); //secondChild = firstSib
         p->p_child.next = &secondChild->p_child;
         list_del_init(&firstChild->p_sib); 
     }
@@ -97,10 +101,8 @@ pcb_t* outChild(pcb_t* p){
 
     pcb_t* prnt= p->p_parent;
     pcb_t* firstChild = list_first_entry(&prnt->p_child,struct pcb_t, p_child);
-    if (p == firstChild){                                                          //case1: p is the first child, using removeChild 
-        removeChild(prnt);
-    }
-    else {                                                                         //caso2: otherwise
+    if (p == firstChild) removeChild(prnt); //case1: p is the first child, using removeChild 
+    else {                                                                        
         p->p_parent = NULL;
         list_del_init(&p->p_sib);
     }
