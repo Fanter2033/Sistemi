@@ -19,7 +19,7 @@ Nell'implementazione degli alberi utilizziamo solamente il campo next del campo 
 Essendo removeChild() un caso specifico di outChild(), abbiamo preferito chiamare removeChild() da outChild() poichè ci è sembrata la scelta più appropriata. 
 
 ## ash.h
-La funzione "removeEmptySemd" viene chiamata in removeBlocked e outBlocked. Si occupa di eseguire la parte comune alle due funzioni, ovvero la rimozione del semaforo se risultasse vuoto. 
+La funzione "removeEmptySemd()" viene chiamata in removeBlocked() e outBlocked(). Si occupa di eseguire la parte comune alle due funzioni, ovvero la rimozione del semaforo se risultasse vuoto. 
 Nelle chiamate alle funzioni di "hashtable.h" utilizziamo un cast a u32 del semadd, poichè le funzioni hash richiedono in input un unsigned 32.
 
 ## ns.h
