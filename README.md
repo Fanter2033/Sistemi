@@ -16,7 +16,7 @@ Unica nota dell'implementazione riguarda outProcQ. Si è preferito fare il retur
 
 ### Tree
 Nell'implementazione degli alberi utilizziamo solamente il campo next del campo p_child del PCB. Utilizzare il campo prev del p_child risulterebbe ridondante in quanto già presente il campo p_parent nel PCB.  
-Abbiamo preferito chiamare removeChild() da outChild() poichè ci è sembrata la scelta più appropriata. In particolare OutChild chiama la removeChild nel caso in cui il figlio fosse il primo. 
+Essendo removeChild() un caso specifico di outChild(), abbiamo preferito chiamare removeChild() da outChild() poichè ci è sembrata la scelta più appropriata. 
 
 ## ash.h
 La funzione "removeEmptySemd" viene chiamata in removeBlocked e outBlocked. Si occupa di eseguire la parte comune alle due funzioni, ovvero la rimozione del semaforo se risultasse vuoto. 
@@ -28,5 +28,5 @@ Inoltre il tipo dei namespace viene già inizializzato in initNamespaces(), dunq
 
 # Compilazione
 Per compilare il progetto è sufficiente utilizzare ` make ` .  
-Per eliminare i file creati dal make si utilizza ` make clean ` .
-Per creare una nuova configurazione su umps3 selezionare la directory "machine" . 
+Per eliminare i file creati dal make si utilizza ` make clean ` . 
+I file riguardanti umps vengono creati nella cartella machine. Dunque per creare una nuova configurazione su umps3 selezionare la directory "machine" . 
