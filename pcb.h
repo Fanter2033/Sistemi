@@ -18,7 +18,6 @@ void freePcb(pcb_t* p);
 pcb_t* allocPcb();
 
 
-
 /* -- Queue list management -- */
 
 /* create a empty pcb list */
@@ -43,12 +42,16 @@ pcb_t* outProcQ(struct list_head* head, pcb_t* p);
 
 /* -- Tree management -- */
 
+/* return (PCB pointed by p has children) */
 int emptyChild(pcb_t *p);
 
+/* insert the PCB pointed by p as child of PCB pointed by prnt */
 void insertChild(pcb_t* prnt, pcb_t* p);
 
+/* if (p has children) then return and remove its first child else return NULL */
 pcb_t* removeChild(pcb_t* p);
 
+/* if (PCB pointed by p has a father) remove it else return NULL (this PCB could be in any position)*/
 pcb_t* outChild(pcb_t* p);
 
 #endif //PCB_H

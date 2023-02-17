@@ -74,8 +74,7 @@ pcb_t* headBlocked(int *semAdd){
 
 void initASH(){
     static semd_t semd_table[MAXPROC];
-    for (int i=0;i<MAXPROC;i++){
+    for (int i=0;i<MAXPROC;i++)
         list_add(&(semd_table[i].s_freelink),&semdFree_h);
-    }
 }
 

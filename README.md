@@ -29,3 +29,4 @@ Inoltre il tipo dei namespace viene già inizializzato in initNamespaces(), dunq
 # Compilazione
 Per compilare il progetto è sufficiente utilizzare ` make ` .  
 Per eliminare i file creati dal make si utilizza ` make clean ` .
+Per creare una nuova configurazione su umps3 selezionare la directory "machine" . 

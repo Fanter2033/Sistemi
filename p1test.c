@@ -166,6 +166,7 @@ int main(void) {
                 break;
             default:
                 break;
+                
         }
         insertProcQ(&qa, q);
     }
