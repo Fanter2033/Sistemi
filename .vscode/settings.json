@@ -1,5 +1,6 @@
 {
     "files.associations": {
         "pandos_const.h": "c"
-    }
+    },
+    "C_Cpp.errorSquiggles": "disabled"
 }
