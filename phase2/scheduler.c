@@ -27,7 +27,7 @@ void schedule(){
                 ... & (~(1<<27)) 
             */
 
-            setSTATUS( 65292 & (~(1<<27)) );
+            setSTATUS( 65292 & (~(1<<27)) );    /* interrupts enabled, PLT disabled */
             WAIT();     /* waiting for I/O interrupt */
         }
         else if (processCount > 0 && SBcount == 0) 

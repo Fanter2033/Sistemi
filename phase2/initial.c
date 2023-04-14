@@ -4,7 +4,9 @@
 #include <pandos_const.h>
 #include <pandos_types.h>
 #include <umps3/umps/libumps.h>
+#include <umps3/umps/cp0.h>
 #include "scheduler.c"
+
 
 #define ALDEV 50   
 
@@ -34,19 +36,14 @@ int pseudoClockSem;
 passupvector_t *passUpCP0;
 
 extern void test();
-
-void uTLB_RefillHandler(){
-    setENTRYHI(0x80000000);
-    setENTRYLO(0x00000000);
-    TLBWR();
-    LDST((STATE_PTR) 0x0FFFF000);
-}
+extern void uTLB_RefillHandler();
+extern void exceptionHandler();
 
 int main(){
     /* passup vector initialization */
     passUpCP0->tlb_refill_handler = (memaddr) uTLB_RefillHandler;
     passUpCP0->tlb_refill_stackPtr = (memaddr) 0x20001000;
-    passUpCP0->exception_handler = (memaddr)  0x30001000; //FUNZIONEDAIMPLEMENTARE;
+    passUpCP0->exception_handler = (memaddr)  exceptionHandler;
     passUpCP0->exception_stackPtr = (memaddr) 0x20001000;
 
     /* data structures initialization */
@@ -114,8 +111,11 @@ int main(){
     */
 
     /* set IEp & KUp and all interrupts enabled */
-
     init-> p_s.status = init->p_s.status | 65292;
+    /*
+        ATTENZIONE: credo vadano usate le macro in cp0.h per fare queste cose, quindi da cambiare.
+        però non ho ben capito come si usano.
+    */
 
     /* set processor Local Timer */
     init-> p_s.status = init->p_s.status | 1 << 27;
