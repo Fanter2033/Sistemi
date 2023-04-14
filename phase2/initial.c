@@ -5,24 +5,25 @@
 #include <pandos_types.h>
 #include <umps3/umps/libumps.h>
 
-#define ALDEV 64        
+#define ALDEV 50   
+
 /*
     All Lines Devices:
 
-    0...7 -> PLT
-    8...15 -> Intterval Timer
-    16...23 -> Disk Devices
-    24...31 -> Flash Devices
-    32...39 -> Network Devices
-    40...47 -> Printer Devices
-    48...55 -> Terminal Devices (W)
-    56...63 -> Terminal Devices (R)
+    0 -> PLT
+    1 -> Interval Timer
+    2...9 -> Disk Devices
+    10...17 -> Flash Devices
+    18...25 -> Network Devices
+    26...33 -> Printer Devices
+    34...41 -> Terminal Devices (W)
+    42...49 -> Terminal Devices (R)
     
 */
 
 int processCount;   /*process started but not yet terminated */
 int SBcount;    /* soft-blocked count */
-list_head* readyQueue;  /* queue of ready pcb */
+struct list_head* readyQueue;  /* queue of ready pcb */
 pcb_t* currentProcess;  /* pcb that is in running state */
 
 int deviceSem[ALDEV];      
@@ -44,7 +45,7 @@ int main(){
     /* passup vector initialization */
     passUpCP0->tlb_refill_handler = (memaddr) uTLB_RefillHandler;
     passUpCP0->tlb_refill_stackPtr = (memaddr) 0x20001000;
-    passUpCP0->exception_handler = (memaddr) FUNZIONEDAIMPLEMENTARE;
+    passUpCP0->exception_handler = (memaddr)  0x30001000; //FUNZIONEDAIMPLEMENTARE;
     passUpCP0->exception_stackPtr = (memaddr) 0x20001000;
 
     /* data structures initialization */
@@ -61,6 +62,9 @@ int main(){
         deviceSem[i]=0;
     }
     pseudoClockSem=0;
+
+    /* set Interval Timer to 100 ms */
+    LDIT(100);
 
     /* First Process initialization */
     pcb_t* init = allocPcb();
@@ -110,10 +114,10 @@ int main(){
 
     /* set IEp & KUp and all interrupts enabled */
 
-    init->p_s.status | 65292;
+    init-> p_s.status = init->p_s.status | 65292;
 
     /* set processor Local Timer */
-    init->p_s.status | 1 << 27;
+    init-> p_s.status = init->p_s.status | 1 << 27;
 
     //init->p_s.status.TE = 1; ?? vedi riferimento sul libro, pagina 9
 
@@ -122,8 +126,8 @@ int main(){
     init->p_s.reg_t9 = (memaddr) test;
 
     /* set SP */
-    
-    init->p_s.reg_sp = (memaddr) RAMTOP;
+    RAMTOP(init->p_s.reg_sp);
 
     //call the scheduler
+    return 0;
 }

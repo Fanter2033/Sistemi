@@ -102,6 +102,9 @@ extern void p5gen();
 extern void p5mm();
 
 
+#if 0
+
+
 /* a procedure to print on terminal 0 */
 void print(char *msg) {
 
@@ -140,6 +143,7 @@ void uTLB_RefillHandler() {
 /*                 p1 -- the root process                            */
 /*                                                                   */
 void test() {
+    
     SYSCALL(VERHOGEN, (int)&sem_testsem, 0, 0); /* V(sem_testsem)   */
 
     print("p1 v(sem_testsem)\n");
@@ -297,6 +301,7 @@ void test() {
     /* should not reach this point, since p1 just got a program trap */
     print("error: p1 still alive after progtrap & no trap vector\n");
     PANIC(); /* PANIC !!!     */
+    
 }
 
 
@@ -736,4 +741,10 @@ void hp_p2() {
     SYSCALL(TERMPROCESS, 0, 0, 0);
     print("Error: hp_p2 didn't die!\n");
     PANIC();
+}
+
+#endif
+
+void test(){
+    return;
 }
