@@ -3,7 +3,7 @@
 #include "ash.h"
 #include <pandos_const.h>
 #include <pandos_types.h>
-
+#include <umps3/umps/cp0.h>
 #include <umps3/umps/libumps.h>
 
 
@@ -18,13 +18,11 @@ extern pcb_t* currentProcess;
 
 
 void exceptionHandler(){
-    /* 
-        credo vada salvato lo stato del processo in quel momento attivo, altrimenti andrebbe perso tutto? 
-        nella guida (punto 3.4) c'è scritto che al momento dell'eccezione, lo stato del processo viene salvato in 
-        0x0FFFF000
-        Quindi credo vada preso in qualche modo da lì
-    */
-    unsigned int excCode = GETEXECCODE(getCAUSE());
+
+   /* save processor state from BIOS Data Page */
+   currentProcess->p_s = (*((state_t *) BIOSDATAPAGE));
+
+    unsigned int excCode = CAUSE_GET_EXCCODE(getCAUSE()); // from CPU or PCB ?? 
     if (excCode == 0){
         //controllo passa all'Interrupt Handler
     }
@@ -40,42 +38,37 @@ void exceptionHandler(){
 }
 
 void syscallExcHandler(){
-    /*
-        NON SO DOVE MINCHIA PRENDERE il contenuto di a0
+    unsigned int a0 = currentProcess ->p_s.reg_a0;
 
-    */
-
-    unsigned int a0 = ... ;
-    switch (a0)
-    {
-    case 1:
+    switch (a0) {
+    case CREATEPROCESS:
         //createProcess(a1,a2,a3);
         break;
-    case 2:
+    case TERMPROCESS:
         //terminateProcess(a1);
         break;
-    case 3:
+    case PASSEREN:
         //Passeren(a1);
         break;
-    case 4:
+    case VERHOGEN:
         //Verhogen(a1);
         break;
-    case 5:
+    case IOWAIT:
         //DO_IO(a1,a2);
         break;
-    case 6:
+    case GETTIME:
         //getCpuTime();
         break;
-    case 7:
+    case CLOCKWAIT:
         //waitForClock():
         break;
-    case 8:
+    case GETSUPPORTPTR:
         //getSupportData();
         break;
-    case 9:
+    case TERMINATE:
         //getProcessID(a1);
         break;
-    case 10:
+    case GET_TOD:
         //getChildren(a1,a2);
         break;
     
