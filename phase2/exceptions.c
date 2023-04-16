@@ -20,9 +20,7 @@ void Passeren();
 void waitForClock();
 void syscallExcHandler();
 
-/*
-    per tenere traccia dei PID, io userei un semplice intero progressivo
-*/
+int PID = 0;
 
 
 void exceptionHandler(){
@@ -57,10 +55,10 @@ void syscallExcHandler(){
 
     switch (a0) {
     case CREATEPROCESS:
-        //createProcess(a1,a2,a3);
+        createProcess(a1,a2,a3);
         break;
     case TERMPROCESS:
-        //terminateProcess(a1);
+        terminateProcess(a1);
         break;
     case PASSEREN:
         Passeren();
@@ -96,6 +94,64 @@ void syscallExcHandler(){
     LDST(&(currentProcess->p_s));
 }
 
+
+int create_Process(state_t *statep, support_t *supportp, nsd_t *ns){
+    pcb_t newProc = allocPcb();
+    //there are no more free pcbs
+    if (newProc == NULL){ 
+        return 0;
+    } else {
+        PID++;
+        processCount++;
+        //the new process is made child of the current one and added to the ready ones
+        insertProcQ(readyQueue, newProc);
+        insertChild(currentProcess, newProc); 
+        newProc->p_s = statep;
+        newProc->p_supportStruct = supportp;
+        newProc->p_time = 0;
+        newProc->p_semAdd = NULL;
+        //if ns==NULL, it fails and enters
+        if(!addNamespace(newProc, ns)){ 
+            for(int i=0; i<NS_TYPE_MAX; i++){
+                //gives the new process the parent's namespace
+                nsd_t tmpNs = getNamespace(currentProcess, i);
+                addNamespace(newProc, tmpNs); 
+            }
+        }
+        newProc->p_pid = PID;
+    }
+return PID;
+}
+
+void terminate_Process(int pid, 0, 0){
+    if(pid==0){ 
+        //kills the current process and progeny
+       outChild(currentProcess);
+       processCount--;
+       if(!emptyChild(currentProcess){
+        terminate_Process(currentProcess->p_child->p_pid,0,0);
+       }
+    } else { 
+        //kills the pointed process and progeny
+        
+        /*magia che mi trova il pcb dato il p_pid*/
+        pcb_t proc;
+        outChild(proc);
+        processCount--;
+        //the process is either blocked at a semaphore or on the ready queue
+        if(proc->p_semAdd!=NULL){
+            proc->p_semAdd->key +=1; //? see page 24 of phase2.book
+            outBlocked(proc);
+            SBcount--;
+            //devide semaphore?
+        } else { 
+            outProcQ(readyQueue, proc);
+        }
+        if(!emptyChild(proc){
+        terminate_Process(proc->p_child->p_pid,0,0);
+       }
+    }
+} 
 
 void Passeren(){
     int* sem = ((int *)currentProcess->p_s.reg_a1);
