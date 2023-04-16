@@ -11,6 +11,14 @@ extern int processCount;
 extern int SBcount;
 extern struct list_head* readyQueue;
 extern pcb_t* currentProcess;
+extern void schedule();
+extern int pseudoClockSem;
+// dichiaro le funzioni per non avere problemi nel make
+// si potranno togliere con la distinzione .h e .c
+
+void Passeren();
+void waitForClock();
+void syscallExcHandler();
 
 /*
     per tenere traccia dei PID, io userei un semplice intero progressivo
@@ -19,10 +27,14 @@ extern pcb_t* currentProcess;
 
 void exceptionHandler(){
 
-   /* save processor state from BIOS Data Page */
-   currentProcess->p_s = (*((state_t *) BIOSDATAPAGE));
+    /* save processor state from BIOS Data Page */
+    currentProcess->p_s = (*((state_t *) BIOSDATAPAGE)); 
+    //dà un problema con il make, si dovrebbe provare a togliere il -nosdtlib ma non risolve
+    //memcpy() è definita in string.h, da capire se dobbiamo implementarla noi (su stackoverflow c'è)
+    //o possiamo linkare string.h
 
     unsigned int excCode = CAUSE_GET_EXCCODE(getCAUSE()); // from CPU or PCB ?? 
+
     if (excCode == 0){
         //controllo passa all'Interrupt Handler
     }
@@ -38,7 +50,10 @@ void exceptionHandler(){
 }
 
 void syscallExcHandler(){
-    unsigned int a0 = currentProcess ->p_s.reg_a0;
+    /* increase PC to avoid loop on Syscall */
+    currentProcess->p_s.pc_epc += 0x00000004;
+    /* take value frome a0 register */
+    unsigned int a0 = (*((int *)currentProcess ->p_s.reg_a0));
 
     switch (a0) {
     case CREATEPROCESS:
@@ -48,7 +63,7 @@ void syscallExcHandler(){
         //terminateProcess(a1);
         break;
     case PASSEREN:
-        //Passeren(a1);
+        Passeren();
         break;
     case VERHOGEN:
         //Verhogen(a1);
@@ -60,7 +75,7 @@ void syscallExcHandler(){
         //getCpuTime();
         break;
     case CLOCKWAIT:
-        //waitForClock():
+        waitForClock();
         break;
     case GETSUPPORTPTR:
         //getSupportData();
@@ -75,8 +90,36 @@ void syscallExcHandler(){
     default:        // > 11
 
         break;
-    }
+    }   
 
-    
-    //incrementare il PC prima di ritornare, altrimenti LOOP sulla syscall
+    /* se la syscall blocca il processo, allora è stato invocato lo scheduler, quindi non si arriverà qui */
+    LDST(&(currentProcess->p_s));
 }
+
+
+void Passeren(){
+    int* sem = ((int *)currentProcess->p_s.reg_a1);
+    if (*sem == 0){     /* blocked */
+        insertBlocked(sem,currentProcess);  // output -> 0 o 1, come mi comporto ??
+        schedule(); /* suspend currentProcess */
+    }
+    else if (headBlocked == NULL){      /* there is NO semaphore -> no PCB */
+        *sem-- ;
+        
+    }
+    else{       /* resource available, more pcb in sem queue */
+        insertBlocked(sem,currentProcess);  
+        /* SCEGLIERE SE RIATTIVARE IL PROCESSO "LIBERATO" O METTERLO NELLA READY QUEUE */
+        /* per ora lo inserisco in ready queue e chiamo lo scheduler */
+        insertProcQ(readyQueue,removeBlocked);
+        schedule();
+    }
+}
+
+void waitForClock(){
+    /* always block on Psuedo-clock sem */
+    insertBlocked(&pseudoClockSem, currentProcess);
+    schedule();
+    /* sezione 3.6.3 per le V dello pseudo clock semaphore, da gestire nell'interrupt handler*/
+}
+

@@ -4,6 +4,7 @@
 #include <pandos_const.h>
 #include <pandos_types.h>
 #include <umps3/umps/libumps.h>
+#include <umps3/umps/cp0.h>
 
 extern int processCount;
 extern int SBcount;
@@ -35,5 +36,5 @@ void schedule(){
     }
     currentProcess = removeProcQ(readyQueue);
     setTIMER(5);
-    LDST(currentProcess->p_s);
+    LDST(&(currentProcess->p_s));
 }

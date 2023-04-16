@@ -5,7 +5,6 @@
 #include <pandos_types.h>
 #include <umps3/umps/libumps.h>
 #include <umps3/umps/cp0.h>
-#include "scheduler.c"
 
 
 #define ALDEV 50   

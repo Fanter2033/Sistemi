@@ -747,5 +747,4 @@ void hp_p2() {
 #endif
 
 void test(){
-    return;
 }
