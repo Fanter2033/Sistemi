@@ -150,3 +150,21 @@ int getProcessID(int parent){
     else return currentProcess->p_pid;
 }
 
+void Verhogen(){
+        int *semaddr = (*(int* ) (currentProcess->p_s.reg_a1)) ;
+        int sem_value = *semaddr ;
+
+        if(sem_value == 1){
+            /* in teoria non deve succedere nulla */
+        }
+
+        else if (headBlocked(semaddr) != NULL)
+            removeBlocked(semaddr);
+        else
+            sem_value++;
+    }
+
+support_t* GetSupportData(){
+    return currentProcess->p_supportStruct;
+}
+
