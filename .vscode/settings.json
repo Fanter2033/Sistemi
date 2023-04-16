@@ -2,7 +2,8 @@
     "files.associations": {
         "pandos_const.h": "c",
         "libumps.h": "c",
-        "ns.h": "c"
+        "ns.h": "c",
+        "cp0.h": "c"
     },
     "C_Cpp.errorSquiggles": "disabled"
 }

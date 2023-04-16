@@ -10,7 +10,7 @@
 
         for (int j=0;j<MAXPROC;j++){
             /* add all namespaces to freeList */
-            type_nsd[i][j].n_type = i;  
+            type_nsd[i][j].n_type = NULL;  
             list_add(&(type_nsd[i][j].n_link),&type_nsFree_h[i]);
         }
     } 

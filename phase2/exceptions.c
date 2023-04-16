@@ -123,3 +123,30 @@ void waitForClock(){
     /* sezione 3.6.3 per le V dello pseudo clock semaphore, da gestire nell'interrupt handler*/
 }
 
+/* Effettua un’operazione di I/O. */
+int DO_IO(int *cmdAddr, int *cmdValues){
+    
+    return 0;
+}
+
+/*Restituisce il tempo di esecuzione (in microsecondi, quindi *1000?) del processo */
+cpu_t getTime(){
+    return currentProcess->p_time; /* v0 inizializzata dopo*/
+}
+
+/*Restituisce l’identificatore del processo invocante se parent == 0, 
+  quello del genitore del processo invocante altrimenti.*/
+
+int getProcessID(int parent){
+    /*type=0 fa riferimento al PID, usiamo 
+    p_pid finchè non carica i file giusti */
+    nsd_t* ns = getNamespace(currentProcess, NS_PID);
+    if (parent){
+        if (ns==getNamespace(currentProcess->p_parent,NS_PID)){
+            return currentProcess->p_pid;
+        }
+        return 0;
+    }
+    else return currentProcess->p_pid;
+}
+
