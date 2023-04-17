@@ -6,11 +6,14 @@
 #include <umps3/umps/cp0.h>
 #include <umps3/umps/libumps.h>
 
+#define ALDEV 50
+
 extern int processCount;
 extern int SBcount;
 extern struct list_head* readyQueue;
 extern pcb_t* currentProcess;
 extern void schedule();
+extern void interruptHandler();
 extern int pseudoClockSem;
 state_t* BIOSDPState;
 
@@ -55,7 +58,7 @@ void exceptionHandler(){
     unsigned int excCode = CAUSE_GET_EXCCODE(getCAUSE()); // from CPU or PCB ?? 
 
     if (excCode == 0){
-        //controllo passa all'Interrupt Handler
+        interruptHandler();
     }
     else if (excCode == 8){
         syscallExcHandler();
@@ -175,7 +178,7 @@ void terminateProcess(int pid){
         /*the process is either blocked at a semaphore or on the ready queue*/
         if(proc->p_semAdd!=NULL){
             /*the semaphore is incremente only if it is not a device one*/
-            if(!(deviceSem<=proc->p_semAdd<=deviceSem+ALDEV*size(int))){
+            if(!(deviceSem <= proc->p_semAdd && proc->p_semAdd <= deviceSem + ALDEV)){ // *sizeof(int) dovrebbe essere implicito in C
                 proc->p_semAdd +=1;
             }
             outBlocked(proc);
