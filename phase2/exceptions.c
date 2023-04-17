@@ -16,8 +16,17 @@ extern int pseudoClockSem;
 // dichiaro le funzioni per non avere problemi nel make
 // si potranno togliere con la distinzione .h e .c
 
+int createProcess(state_t *statep, support_t *supportp, nsd_t *ns);
+void terminateProcess(int pid, 0, 0);
 void Passeren();
+void Verhogen();
+int DO_IO(int *cmdAddr, int *cmdValues)
+cpu_t getTime();
 void waitForClock();
+support_t* getSupportData();
+int getProcessID(int parent);
+int getChildren(int *children, int size);
+
 void syscallExcHandler();
 
 int PID = 0;
@@ -55,34 +64,43 @@ void syscallExcHandler(){
 
     switch (a0) {
     case CREATEPROCESS:
+        state_t* a1 = (state_t*)(currentProcess ->p_s.reg_a1);
+        support_t* a2 = (support_t*)(currentProcess ->p_s.reg_a2);
+        ns_t* a3 = (ns_t*)(currentProcess ->p_s.reg_a3);
         createProcess(a1,a2,a3);
         break;
     case TERMPROCESS:
+        int* a1 = (int*)(currentProcess ->p_s.reg_a1);
         terminateProcess(a1);
         break;
     case PASSEREN:
         Passeren();
         break;
     case VERHOGEN:
-        //Verhogen(a1);
+        Verhogen();
         break;
     case IOWAIT:
-        //DO_IO(a1,a2);
+        int* a1 = (int*)(currentProcess ->p_s.reg_a1);
+        int* a2 = (int*)(currentProcess ->p_s.reg_a2);
+        DO_IO(a1,a2);
         break;
     case GETTIME:
-        //getCpuTime();
+        getTime();
         break;
     case CLOCKWAIT:
         waitForClock();
         break;
     case GETSUPPORTPTR:
-        //getSupportData();
+        getSupportData();
         break;
     case TERMINATE:
-        //getProcessID(a1);
+        int* a1 = (int*)(currentProcess ->p_s.reg_a1);
+        getProcessID(a1);
         break;
     case GET_TOD:
-        //getChildren(a1,a2);
+        int* a1 = (int*)(currentProcess ->p_s.reg_a1);
+        int a2 = (*((int*)(currentProcess ->p_s.reg_a1)));
+        getChildren(a1,a2);
         break;
     
     default:        // > 11
@@ -95,15 +113,16 @@ void syscallExcHandler(){
 }
 
 
-int create_Process(state_t *statep, support_t *supportp, nsd_t *ns){
-    pcb_t newProc = allocPcb();
+int createProcess(state_t *statep, support_t *supportp, nsd_t *ns){
+    pcb_t* newProc = allocPcb();
     //there are no more free pcbs
     if (newProc == NULL){ 
         return 0;
     } else {
         PID++;
         processCount++;
-        //the new process is made child of the current one and added to the ready ones
+        /* The new process is set to be the 
+        child of the current one and added to the readyQueue */
         insertProcQ(readyQueue, newProc);
         insertChild(currentProcess, newProc); 
         newProc->p_s = statep;
@@ -112,9 +131,10 @@ int create_Process(state_t *statep, support_t *supportp, nsd_t *ns){
         newProc->p_semAdd = NULL;
         //if ns==NULL, it fails and enters
         if(!addNamespace(newProc, ns)){ 
+            /* This could be made by pointing the same structure as the father */
             for(int i=0; i<NS_TYPE_MAX; i++){
                 //gives the new process the parent's namespace
-                nsd_t tmpNs = getNamespace(currentProcess, i);
+                nsd_t* tmpNs = getNamespace(currentProcess, i);
                 addNamespace(newProc, tmpNs); 
             }
         }
@@ -123,19 +143,21 @@ int create_Process(state_t *statep, support_t *supportp, nsd_t *ns){
 return PID;
 }
 
-void terminate_Process(int pid, 0, 0){
-    if(pid==0){ 
-        //kills the current process and progeny
-       outChild(currentProcess);
-       processCount--;
-       if(!emptyChild(currentProcess){
-        terminate_Process(currentProcess->p_child->p_pid,0,0);
-       }
-    } else { 
-        //kills the pointed process and progeny
-        
+void terminateProcess(int pid, 0, 0){
+    if(pid==0){  /* Kills the current process and progeny */
+        outChild(currentProcess);
+        processCount--;
+        if(!emptyChild(currentProcess)){
+            /* We should also kill all the siblings */
+            pcb_t* firstChild = list_first_entry(&currentProcess->p_child,struct pcb_t,p_child);
+            terminate_Process(firstChild->p_pid,0,0);
+        }
+        freePcb(currentProcess);
+    } else {  /* Kills the pointed process and progeny */
+        /* We should search currentProcess, readyQueue, 
+        device Semaphores and other semaphore */
         /*magia che mi trova il pcb dato il p_pid*/
-        pcb_t proc;
+        pcb_t* proc;
         outChild(proc);
         processCount--;
         //the process is either blocked at a semaphore or on the ready queue
@@ -143,11 +165,11 @@ void terminate_Process(int pid, 0, 0){
             proc->p_semAdd->key +=1; //? see page 24 of phase2.book
             outBlocked(proc);
             SBcount--;
-            //devide semaphore?
+            //device semaphore?
         } else { 
             outProcQ(readyQueue, proc);
         }
-        if(!emptyChild(proc){
+        if(!emptyChild(proc)){
         terminate_Process(proc->p_child->p_pid,0,0);
        }
     }
@@ -172,40 +194,6 @@ void Passeren(){
     }
 }
 
-void waitForClock(){
-    /* always block on Psuedo-clock sem */
-    insertBlocked(&pseudoClockSem, currentProcess);
-    schedule();
-    /* sezione 3.6.3 per le V dello pseudo clock semaphore, da gestire nell'interrupt handler*/
-}
-
-/* Effettua un’operazione di I/O. */
-int DO_IO(int *cmdAddr, int *cmdValues){
-    
-    return 0;
-}
-
-/*Restituisce il tempo di esecuzione (in microsecondi, quindi *1000?) del processo */
-cpu_t getTime(){
-    return currentProcess->p_time; /* v0 inizializzata dopo*/
-}
-
-/*Restituisce l’identificatore del processo invocante se parent == 0, 
-  quello del genitore del processo invocante altrimenti.*/
-
-int getProcessID(int parent){
-    /*type=0 fa riferimento al PID, usiamo 
-    p_pid finchè non carica i file giusti */
-    nsd_t* ns = getNamespace(currentProcess, NS_PID);
-    if (parent){
-        if (ns==getNamespace(currentProcess->p_parent,NS_PID)){
-            return currentProcess->p_pid;
-        }
-        return 0;
-    }
-    else return currentProcess->p_pid;
-}
-
 void Verhogen(){
         int *semaddr = (*(int* ) (currentProcess->p_s.reg_a1)) ;
         int sem_value = *semaddr ;
@@ -220,7 +208,47 @@ void Verhogen(){
             sem_value++;
     }
 
-support_t* GetSupportData(){
+/* Effettua un’operazione di I/O. */
+int DO_IO(int *cmdAddr, int *cmdValues){
+    
+    return 0;
+}
+
+/*Restituisce il tempo di esecuzione (in microsecondi, quindi *1000?) del processo */
+cpu_t getTime(){
+    return currentProcess->p_time; /* v0 inizializzata dopo*/
+}
+
+void waitForClock(){
+    /* Always block on Psuedo-clock sem */
+    insertBlocked(&pseudoClockSem, currentProcess);
+    schedule();
+    /* sezione 3.6.3 per le V dello pseudo clock semaphore, da gestire nell'interrupt handler*/
+}
+
+support_t* getSupportData(){
     return currentProcess->p_supportStruct;
 }
 
+/*Restituisce l’identificatore del processo invocante se parent == 0, 
+  quello del genitore del processo invocante altrimenti.*/
+
+int getProcessID(int parent){
+    /*type=0 fa riferimento al PID, usiamo 
+    p_pid finchè non carica i file giusti */
+    /* Si potrebbe estendere a tutti i tipi, dipende da cosa 
+    facciamo nella create process */
+    nsd_t* ns = getNamespace(currentProcess, NS_PID);
+    if (parent){
+        if (ns==getNamespace(currentProcess->p_parent,NS_PID)){
+            return currentProcess->p_pid;
+        }
+        return 0;
+    }
+    else return currentProcess->p_pid;
+}
+
+/*Deve ritornare il numero di figli con lo stesso PID (?)*/
+int getChildren(int* children, int size){
+
+}
