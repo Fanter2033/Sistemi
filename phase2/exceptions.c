@@ -243,9 +243,23 @@ int getProcessID(int parent){
     else return currentProcess->p_pid;
 }
 
-/*Deve ritornare il numero di figli con lo stesso PID (?)*/
+/*Deve ritornare il numero di figli con lo stesso namespace */
 int getChildren(int* children, int size){
-
+    int valueToReturn = 0;
+    struct pcb_t* firstChild = currentProcess->child;
+    
+    if (!emptyChild(currentProcess)){                            // controllo se il pcb ha figli
+        nsd_t* currentNs = getNamespace(currentProcess, NS_PID);
+        struct pcb_t* iterator = NULL;
+        list_for_each_entry(iterator,firstChild,p_sib){
+            if (currentNs == getNamespace(iterator, NS_PID)){   
+                if (size < valueToReturn)
+                    *(children + valueToReturn) = iterator->p_pid;// finche riesco assegno alla cella contigua dell'array il pid del processo figlio 
+                valueToReturn ++;
+            }
+        }
+    }
+    return valueToReturn;
 }
 
 
