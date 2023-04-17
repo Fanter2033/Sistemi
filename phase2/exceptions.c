@@ -12,6 +12,7 @@ extern struct list_head* readyQueue;
 extern pcb_t* currentProcess;
 extern void schedule();
 extern int pseudoClockSem;
+extern int deviceSem;
 state_t* BIOSDPState;
 
 //TODO list
@@ -79,11 +80,10 @@ void syscallExcHandler(){
 
     else {
         /* take value frome a0 register */
-        unsigned int a0 = (*((int *)(BIOSDPState->p_s.reg_a0)));
-
+        unsigned int a0 = (*((int *)(BIOSDPState->reg_a0)));
         switch (a0) {
         case CREATEPROCESS:
-            BIOSDPState->p_s.reg_v0 = (int) createProcess((state_t*)(BIOSDPState ->p_s.reg_a1),(support_t*)(BIOSDPState ->p_s.reg_a2),(nsd_t*)(BIOSDPState ->p_s.reg_a3));
+            BIOSDPState->reg_v0 = (int) createProcess((state_t*)(BIOSDPState ->reg_a1),(support_t*)(BIOSDPState ->reg_a2),(nsd_t*)(BIOSDPState ->reg_a3));
             break;
         case TERMPROCESS:
             terminateProcess((int*)(currentProcess ->p_s.reg_a1));
@@ -95,22 +95,22 @@ void syscallExcHandler(){
             Verhogen();
             break;
         case DOIO:
-            BIOSDPState->p_s.reg_v0 = (int) DO_IO((int*)(BIOSDPState ->p_s.reg_a1),(int*)(BIOSDPState ->p_s.reg_a2));
+            BIOSDPState->reg_v0 = (int) DO_IO((int*)(BIOSDPState ->reg_a1),(int*)(BIOSDPState ->reg_a2));
             break;
         case GETTIME:
-            BIOSDPState->p_s.reg_v0 = (int) getTime();
+            BIOSDPState->reg_v0 = (int) getTime();
             break;
         case CLOCKWAIT:
             waitForClock();
             break;
         case GETSUPPORTPTR:
-            BIOSDPState->p_s.reg_v0 = (int) getSupportData();
+            BIOSDPState->reg_v0 = (int) getSupportData();
             break;
         case GETPROCESSID:
-            BIOSDPState->p_s.reg_v0 = (int) getProcessID((int*)(BIOSDPState ->p_s.reg_a1));
+            BIOSDPState->reg_v0 = (int) getProcessID((int*)(BIOSDPState ->reg_a1));
             break;
         case GETCHILDREN:
-            BIOSDPState->p_s.reg_v0 = (int) getChildren((int*)(BIOSDPState ->p_s.reg_a1),(*((int*)(BIOSDPState ->p_s.reg_a1))));
+            BIOSDPState->reg_v0 = (int) getChildren((int*)(BIOSDPState ->reg_a1),(*((int*)(BIOSDPState ->reg_a1))));
             break;
         
         default:        // > 11
@@ -175,7 +175,7 @@ void terminateProcess(int pid){
         /*the process is either blocked at a semaphore or on the ready queue*/
         if(proc->p_semAdd!=NULL){
             /*the semaphore is incremente only if it is not a device one*/
-            if(!(deviceSem<=proc->p_semAdd<=deviceSem+ALDEV*size(int))){
+            if(!(deviceSem<=proc->p_semAdd<=deviceSem+ALDEV*sizeof(int))){
                 proc->p_semAdd +=1;
             }
             outBlocked(proc);
@@ -186,7 +186,7 @@ void terminateProcess(int pid){
         while(!emptyChild(proc)){
             /* removeChild removes the first child and moves his first brother in its place:
             it only exits the loop when all the siblings have been removed */
-            pcb_t* firstChild = list_first_entry(&prnt->p_child,struct pcb_t, p_child);
+            pcb_t* firstChild = list_first_entry(&proc->p_child,struct pcb_t, p_child);
             removeChild(proc);
             /*terminates the subtree of the first child*/
             terminateProcess(firstChild->p_pid);
