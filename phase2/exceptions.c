@@ -174,10 +174,12 @@ void terminateProcess(int pid){
         processCount--;
         /*the process is either blocked at a semaphore or on the ready queue*/
         if(proc->p_semAdd!=NULL){
-            proc->p_semAdd +=1; //? see page 43 of phase2.book
+            /*the semaphore is incremente only if it is not a device one*/
+            if(!(deviceSem<=proc->p_semAdd<=deviceSem+ALDEV*size(int))){
+                proc->p_semAdd +=1;
+            }
             outBlocked(proc);
             SBcount--;
-            //device semaphore?
         } else { 
             outProcQ(readyQueue, proc);
         }
@@ -284,7 +286,7 @@ int getProcessID(int parent){
 /*Deve ritornare il numero di figli con lo stesso namespace */
 int getChildren(int* children, int size){
     int valueToReturn = 0;
-    struct pcb_t* firstChild = currentProcess->child;
+    struct pcb_t* firstChild = currentProcess->p_child;
     
     if (!emptyChild(currentProcess)){                            // controllo se il pcb ha figli
         nsd_t* currentNs = getNamespace(currentProcess, NS_PID);
