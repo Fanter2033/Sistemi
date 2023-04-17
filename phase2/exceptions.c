@@ -128,14 +128,16 @@ void terminate_Process(int pid, 0, 0){
         //kills the current process and progeny
        outChild(currentProcess);
        processCount--;
-       if(!emptyChild(currentProcess){
-        terminate_Process(currentProcess->p_child->p_pid,0,0);
+       while(!emptyChild(proc){ //!!
+            *pcb_t firstChild = list_first_entry(&prnt->p_child,struct pcb_t, p_child);
+            removeChild(proc);
+            terminate_Process(firstChild->p_pid,0,0);
        }
     } else { 
         //kills the pointed process and progeny
         
         /*magia che mi trova il pcb dato il p_pid*/
-        pcb_t proc;
+        *pcb_t proc; //di prova 
         outChild(proc);
         processCount--;
         //the process is either blocked at a semaphore or on the ready queue
@@ -147,8 +149,10 @@ void terminate_Process(int pid, 0, 0){
         } else { 
             outProcQ(readyQueue, proc);
         }
-        if(!emptyChild(proc){
-        terminate_Process(proc->p_child->p_pid,0,0);
+        while(!emptyChild(proc){ //!!
+            *pcb_t firstChild = list_first_entry(&prnt->p_child,struct pcb_t, p_child);
+            removeChild(proc);
+            terminate_Process(firstChild->p_pid,0,0);
        }
     }
 } 
