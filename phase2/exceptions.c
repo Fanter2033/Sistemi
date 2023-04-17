@@ -286,11 +286,12 @@ int getProcessID(int parent){
 /*Deve ritornare il numero di figli con lo stesso namespace */
 int getChildren(int* children, int size){
     int valueToReturn = 0;
-    struct pcb_t* firstChild = currentProcess->p_child;
+    pcb_t* firstChild = list_first_entry(&currentProcess->p_child,struct pcb_t,p_child);
     
     if (!emptyChild(currentProcess)){                            // controllo se il pcb ha figli
         nsd_t* currentNs = getNamespace(currentProcess, NS_PID);
         struct pcb_t* iterator = NULL;
+        
         list_for_each_entry(iterator,firstChild,p_sib){
             if (currentNs == getNamespace(iterator, NS_PID)){   
                 if (size < valueToReturn)
