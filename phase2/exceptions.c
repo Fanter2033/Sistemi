@@ -148,33 +148,38 @@ void terminateProcess(int pid){
     if(pid==0){  /* Kills the current process and progeny */
         outChild(currentProcess);
         processCount--;
-        if(!emptyChild(currentProcess)){
-            /* We should also kill all the siblings */
+        while(!emptyChild(currentProcess)){
+            /* removeChild removes the first child and moves his first brother in its place:
+            it only exits the loop when all the siblings have been removed */
             pcb_t* firstChild = list_first_entry(&currentProcess->p_child,struct pcb_t,p_child);
+            removeChild(currentProcess);
+            /*terminates the subtree of the first child*/
             terminateProcess(firstChild->p_pid);
         }
+        /*each pcb is freed in its recursive call*/
         freePcb(currentProcess);
     } else {  /* Kills the pointed process and progeny */
-    
-
         pcb_t* proc = findPCB_pid(pid);
         outChild(proc);
         processCount--;
-        //the process is either blocked at a semaphore or on the ready queue
+        /*the process is either blocked at a semaphore or on the ready queue*/
         if(proc->p_semAdd!=NULL){
-            proc->p_semAdd +=1; //? see page 24 of phase2.book
+            proc->p_semAdd +=1; //? see page 43 of phase2.book
             outBlocked(proc);
             SBcount--;
             //device semaphore?
         } else { 
             outProcQ(readyQueue, proc);
         }
-        while(!emptyChild(proc){ //!!
+        while(!emptyChild(proc)){
+            /* removeChild removes the first child and moves his first brother in its place:
+            it only exits the loop when all the siblings have been removed */
             pcb_t* firstChild = list_first_entry(&prnt->p_child,struct pcb_t, p_child);
-            //Kill the siblings
             removeChild(proc);
+            /*terminates the subtree of the first child*/
             terminateProcess(firstChild->p_pid);
        }
+       freePcb(proc);
     }
 } 
 
