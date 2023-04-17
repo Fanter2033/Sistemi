@@ -13,14 +13,16 @@ extern struct list_head* readyQueue;
 extern pcb_t* currentProcess;
 extern void schedule();
 extern int pseudoClockSem;
+
 // dichiaro le funzioni per non avere problemi nel make
 // si potranno togliere con la distinzione .h e .c
-
+pcb_t* findPCBfromQUEUE(int pid, struct list_head* head );
+pcb_t* findPCB_pid(int pid);
 int createProcess(state_t *statep, support_t *supportp, nsd_t *ns);
-void terminateProcess(int pid, 0, 0);
+void terminateProcess(int pid);
 void Passeren();
 void Verhogen();
-int DO_IO(int *cmdAddr, int *cmdValues)
+int DO_IO(int *cmdAddr, int *cmdValues);
 cpu_t getTime();
 void waitForClock();
 support_t* getSupportData();
@@ -29,7 +31,7 @@ int getChildren(int *children, int size);
 
 void syscallExcHandler();
 
-int PID = 0;
+int PID = 2;    /* 1 is the init process */
 
 
 void exceptionHandler(){
@@ -58,13 +60,13 @@ void exceptionHandler(){
 
 void syscallExcHandler(){
     /* increase PC to avoid loop on Syscall */
-    currentProcess->p_s.pc_epc += 0x00000004;
+    currentProcess->p_s.pc_epc += WORDLEN;
     /* take value frome a0 register */
     unsigned int a0 = (*((int *)currentProcess ->p_s.reg_a0));
 
     switch (a0) {
     case CREATEPROCESS:
-        createProcess((state_t*)(currentProcess ->p_s.reg_a1),a(support_t*)(currentProcess ->p_s.reg_a2)2,(ns_t*)(currentProcess ->p_s.reg_a3));
+        currentProcess->p_s.reg_v0 = (int) createProcess((state_t*)(currentProcess ->p_s.reg_a1),(support_t*)(currentProcess ->p_s.reg_a2),(nsd_t*)(currentProcess ->p_s.reg_a3));
         break;
     case TERMPROCESS:
         terminateProcess((int*)(currentProcess ->p_s.reg_a1));
@@ -76,22 +78,22 @@ void syscallExcHandler(){
         Verhogen();
         break;
     case IOWAIT:
-        DO_IO((int*)(currentProcess ->p_s.reg_a1),(int*)(currentProcess ->p_s.reg_a2));
+        currentProcess->p_s.reg_v0 = (int) DO_IO((int*)(currentProcess ->p_s.reg_a1),(int*)(currentProcess ->p_s.reg_a2));
         break;
     case GETTIME:
-        getTime();
+        currentProcess->p_s.reg_v0 = (int) getTime();
         break;
     case CLOCKWAIT:
         waitForClock();
         break;
     case GETSUPPORTPTR:
-        getSupportData();
+        currentProcess->p_s.reg_v0 = (int) getSupportData();
         break;
     case TERMINATE:
-        getProcessID((int*)(currentProcess ->p_s.reg_a1));
+        currentProcess->p_s.reg_v0 = (int) getProcessID((int*)(currentProcess ->p_s.reg_a1));
         break;
     case GET_TOD:
-        getChildren((int*)(currentProcess ->p_s.reg_a1),(*((int*)(currentProcess ->p_s.reg_a1))));
+        currentProcess->p_s.reg_v0 = (int) getChildren((int*)(currentProcess ->p_s.reg_a1),(*((int*)(currentProcess ->p_s.reg_a1))));
         break;
     
     default:        // > 11
@@ -116,7 +118,7 @@ int createProcess(state_t *statep, support_t *supportp, nsd_t *ns){
         child of the current one and added to the readyQueue */
         insertProcQ(readyQueue, newProc);
         insertChild(currentProcess, newProc); 
-        newProc->p_s = statep;
+        newProc->p_s = (*statep);
         newProc->p_supportStruct = supportp;
         newProc->p_time = 0;
         newProc->p_semAdd = NULL;
@@ -131,29 +133,28 @@ int createProcess(state_t *statep, support_t *supportp, nsd_t *ns){
         }
         newProc->p_pid = PID;
     }
-return PID;
+    return PID;
 }
 
-void terminateProcess(int pid, 0, 0){
+void terminateProcess(int pid){
     if(pid==0){  /* Kills the current process and progeny */
         outChild(currentProcess);
         processCount--;
         if(!emptyChild(currentProcess)){
             /* We should also kill all the siblings */
             pcb_t* firstChild = list_first_entry(&currentProcess->p_child,struct pcb_t,p_child);
-            terminate_Process(firstChild->p_pid,0,0);
+            terminateProcess(firstChild->p_pid);
         }
         freePcb(currentProcess);
     } else {  /* Kills the pointed process and progeny */
-        /* We should search currentProcess, readyQueue, 
-        device Semaphores and other semaphore */
-        /*magia che mi trova il pcb dato il p_pid*/
-        pcb_t* proc;
+    
+
+        pcb_t* proc = findPCB_pid(pid);
         outChild(proc);
         processCount--;
         //the process is either blocked at a semaphore or on the ready queue
         if(proc->p_semAdd!=NULL){
-            proc->p_semAdd->key +=1; //? see page 24 of phase2.book
+            proc->p_semAdd +=1; //? see page 24 of phase2.book
             outBlocked(proc);
             SBcount--;
             //device semaphore?
@@ -162,7 +163,7 @@ void terminateProcess(int pid, 0, 0){
         }
         if(!emptyChild(proc)){
             pcb_t* firstChild = list_first_entry(&currentProcess->p_child,struct pcb_t,p_child);
-            terminate_Process(firstChild->p_pid,0,0);
+            terminateProcess(firstChild->p_pid);
        }
     }
 } 
@@ -243,4 +244,33 @@ int getProcessID(int parent){
 /*Deve ritornare il numero di figli con lo stesso PID (?)*/
 int getChildren(int* children, int size){
 
+}
+
+
+pcb_t* findPCB_pid(int pid){
+    pcb_t* PCBToReturn;
+
+    /* search in ready queue */
+    PCBToReturn = findPCBfromQUEUE(pid, readyQueue);
+
+    /* search in semaphores */
+    if(PCBToReturn != NULL){
+        int bkt=0;
+        struct semd_t* iterator;
+        hash_for_each(semd_h,bkt,iterator,s_link){
+            PCBToReturn = findPCBfromQUEUE(pid,&iterator->s_procq);
+            if (PCBToReturn != NULL)
+                return PCBToReturn;
+        }
+    }
+    return PCBToReturn;
+}
+
+pcb_t* findPCBfromQUEUE(int pid, struct list_head* head ){
+    pcb_t* iterator = NULL;
+    list_for_each_entry(iterator,head,p_list){
+        if (iterator->p_pid == pid)      // p is in the list
+            return iterator;
+    }
+    return NULL;
 }

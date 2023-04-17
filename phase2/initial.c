@@ -70,6 +70,7 @@ int main(){
     processCount++;
     init->p_time=0;
     init->p_supportStruct=NULL;
+    init->p_pid = 1;
     /* semADD and Process Tree fields initializated in allocPcb() */
 
     /* set IEp & KUp, all Interrupts enabled, Processor Local Timer */
