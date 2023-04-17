@@ -64,14 +64,10 @@ void syscallExcHandler(){
 
     switch (a0) {
     case CREATEPROCESS:
-        state_t* a1 = (state_t*)(currentProcess ->p_s.reg_a1);
-        support_t* a2 = (support_t*)(currentProcess ->p_s.reg_a2);
-        ns_t* a3 = (ns_t*)(currentProcess ->p_s.reg_a3);
-        createProcess(a1,a2,a3);
+        createProcess((state_t*)(currentProcess ->p_s.reg_a1),a(support_t*)(currentProcess ->p_s.reg_a2)2,(ns_t*)(currentProcess ->p_s.reg_a3));
         break;
     case TERMPROCESS:
-        int* a1 = (int*)(currentProcess ->p_s.reg_a1);
-        terminateProcess(a1);
+        terminateProcess((int*)(currentProcess ->p_s.reg_a1));
         break;
     case PASSEREN:
         Passeren();
@@ -80,9 +76,7 @@ void syscallExcHandler(){
         Verhogen();
         break;
     case IOWAIT:
-        int* a1 = (int*)(currentProcess ->p_s.reg_a1);
-        int* a2 = (int*)(currentProcess ->p_s.reg_a2);
-        DO_IO(a1,a2);
+        DO_IO((int*)(currentProcess ->p_s.reg_a1),(int*)(currentProcess ->p_s.reg_a2));
         break;
     case GETTIME:
         getTime();
@@ -94,13 +88,10 @@ void syscallExcHandler(){
         getSupportData();
         break;
     case TERMINATE:
-        int* a1 = (int*)(currentProcess ->p_s.reg_a1);
-        getProcessID(a1);
+        getProcessID((int*)(currentProcess ->p_s.reg_a1));
         break;
     case GET_TOD:
-        int* a1 = (int*)(currentProcess ->p_s.reg_a1);
-        int a2 = (*((int*)(currentProcess ->p_s.reg_a1)));
-        getChildren(a1,a2);
+        getChildren((int*)(currentProcess ->p_s.reg_a1),(*((int*)(currentProcess ->p_s.reg_a1))));
         break;
     
     default:        // > 11
@@ -170,7 +161,8 @@ void terminateProcess(int pid, 0, 0){
             outProcQ(readyQueue, proc);
         }
         if(!emptyChild(proc)){
-        terminate_Process(proc->p_child->p_pid,0,0);
+            pcb_t* firstChild = list_first_entry(&currentProcess->p_child,struct pcb_t,p_child);
+            terminate_Process(firstChild->p_pid,0,0);
        }
     }
 } 
