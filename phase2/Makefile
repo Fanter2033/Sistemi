@@ -24,7 +24,7 @@ CFLAGS_MIPS = -mips1 -mabi=32 -mno-gpopt -EL -G 0 -mno-abicalls -fno-pic -mfp32 
 CFLAGS = $(CFLAGS_LANG) $(CFLAGS_MIPS) -I$(UMPS3_INCLUDE_DIR) -I$(UMPS3_TYPE_DIR) -O0 -std=gnu99
 
 # Linker options
-LDFLAGS = -G 0 -nostdlib -T $(UMPS3_DATA_DIR)/umpscore.ldscript -m elf32ltsmip
+LDFLAGS = -G 0 -T $(UMPS3_DATA_DIR)/umpscore.ldscript -m elf32ltsmip
 
 # Add the location of crt*.S to the search path
 VPATH = $(UMPS3_DATA_DIR)
@@ -36,7 +36,7 @@ all : kernel.core.umps
 kernel.core.umps : kernel
 	umps3-elf2umps -k $<
 
-kernel : initial.o scheduler.o exceptions.o p2test.o pcb.o ash.o ns.o crtso.o libumps.o
+kernel : initial.o scheduler.o exceptions.o p2test.01.o pcb.o ash.o ns.o crtso.o libumps.o
 	$(LD) -o $@ $^ $(LDFLAGS)
 
 clean :

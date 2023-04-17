@@ -141,7 +141,6 @@ void uTLB_RefillHandler() {
     LDST((state_t *)0x0FFFF000);
 }
 
-
 /*********************************************************************/
 /*                                                                   */
 /*                 p1 -- the root process                            */
@@ -865,4 +864,11 @@ void p11() {
 
     print("Error: p11 didn't die!\n");
     PANIC();
+<<<<<<< HEAD:phase2/p2test.c
+=======
+}
+#endif
+void test(){
+
+>>>>>>> localTest:phase2/p2test.01.c
 }

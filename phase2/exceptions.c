@@ -6,7 +6,6 @@
 #include <umps3/umps/cp0.h>
 #include <umps3/umps/libumps.h>
 
-
 extern int processCount;
 extern int SBcount;
 extern struct list_head* readyQueue;
@@ -16,6 +15,15 @@ extern int pseudoClockSem;
 
 // dichiaro le funzioni per non avere problemi nel make
 // si potranno togliere con la distinzione .h e .c
+
+void *memcpy(void *dest, const void *src, unsigned long n)
+{
+    for (unsigned long i = 0; i < n; i++)
+    {
+        ((char*)dest)[i] = ((char*)src)[i];
+    }
+}
+
 pcb_t* findPCBfromQUEUE(int pid, struct list_head* head );
 pcb_t* findPCB_pid(int pid);
 int createProcess(state_t *statep, support_t *supportp, nsd_t *ns);
@@ -77,7 +85,7 @@ void syscallExcHandler(){
     case VERHOGEN:
         Verhogen();
         break;
-    case IOWAIT:
+    case DOIO:
         currentProcess->p_s.reg_v0 = (int) DO_IO((int*)(currentProcess ->p_s.reg_a1),(int*)(currentProcess ->p_s.reg_a2));
         break;
     case GETTIME:
@@ -89,10 +97,10 @@ void syscallExcHandler(){
     case GETSUPPORTPTR:
         currentProcess->p_s.reg_v0 = (int) getSupportData();
         break;
-    case TERMINATE:
+    case GETPROCESSID:
         currentProcess->p_s.reg_v0 = (int) getProcessID((int*)(currentProcess ->p_s.reg_a1));
         break;
-    case GET_TOD:
+    case GETCHILDREN:
         currentProcess->p_s.reg_v0 = (int) getChildren((int*)(currentProcess ->p_s.reg_a1),(*((int*)(currentProcess ->p_s.reg_a1))));
         break;
     
