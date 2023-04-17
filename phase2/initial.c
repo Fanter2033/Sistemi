@@ -73,17 +73,21 @@ int main(){
     init->p_pid = 1;
     /* semADD and Process Tree fields initializated in allocPcb() */
 
-    /* set IEp & KUp, all Interrupts enabled, Processor Local Timer */
+    /* set the init' status: 
+    IEp - Interrupt Enabled, 
+    KUp - Kernel Mode on, 
+    IM - Interrupt Mask all set to 1 , 
+    TE - processor Local Timer enabled */
     init-> p_s.status = init->p_s.status | STATUS_IEp | STATUS_KUp | STATUS_IM_MASK | STATUS_TE ;
 
-    /* set PC */
+    /* set PC to the address of test (assign in t9 reg for tecnical reason) */
     init->p_s.pc_epc = (memaddr) test;
     init->p_s.reg_t9 = (memaddr) test;
     
-    /* set SP */
+    /* set SP to RAMTOP */
     RAMTOP(init->p_s.reg_sp);
 
-    //call the scheduler
+    /* call the scheduler */
     schedule();
 
     return 0;
