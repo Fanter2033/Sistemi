@@ -22,14 +22,6 @@ void schedule(){
             setSTATUS( STATUS_IEp | STATUS_KUp | STATUS_IM_MASK & (~STATUS_TE) );    
             WAIT();     /* waiting for I/O interrupt */
 
-            /*
-                Per settare il bit del PLT a 0, devo fare un & con una sequenza di 1 e uno 0 
-                nella posizione che voglio annullare
-
-                001000100010 & 
-                000111111111 = 
-                000000100010
-            */
         }
         else if (processCount > 0 && SBcount == 0) 
             PANIC();     /* deadlock found */

@@ -79,7 +79,7 @@ int main(){
     /* set PC */
     init->p_s.pc_epc = (memaddr) test;
     init->p_s.reg_t9 = (memaddr) test;
-
+    
     /* set SP */
     RAMTOP(init->p_s.reg_sp);
 

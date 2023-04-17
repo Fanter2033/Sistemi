@@ -12,6 +12,10 @@ extern struct list_head* readyQueue;
 extern pcb_t* currentProcess;
 extern void schedule();
 extern int pseudoClockSem;
+state_t* BIOSDPState;
+
+//TODO list
+// prima di ogni schedule(), bisogna incrementare il TOD (sezione 3.8)
 
 // dichiaro le funzioni per non avere problemi nel make
 // si potranno togliere con la distinzione .h e .c
@@ -44,11 +48,9 @@ int PID = 2;    /* 1 is the init process */
 
 void exceptionHandler(){
 
-    /* save processor state from BIOS Data Page */
-    currentProcess->p_s = (*((state_t *) BIOSDATAPAGE)); 
-    //dà un problema con il make, si dovrebbe provare a togliere il -nosdtlib ma non risolve
-    //memcpy() è definita in string.h, da capire se dobbiamo implementarla noi (su stackoverflow c'è)
-    //o possiamo linkare string.h
+    /* use processor state in BIOS Data Page */
+    BIOSDPState = ((state_t *) BIOSDATAPAGE);
+
 
     unsigned int excCode = CAUSE_GET_EXCCODE(getCAUSE()); // from CPU or PCB ?? 
 
@@ -67,50 +69,58 @@ void exceptionHandler(){
 }
 
 void syscallExcHandler(){
-    /* increase PC to avoid loop on Syscall */
-    currentProcess->p_s.pc_epc += WORDLEN;
-    /* take value frome a0 register */
-    unsigned int a0 = (*((int *)currentProcess ->p_s.reg_a0));
+    /* check process if is in Kernel Mode */
+    if (((BIOSDPState->status & STATUS_KUc) >> 1) == 0 ){
+        /* set ExcCode to RI */
+        setCAUSE((EXC_RI << CAUSE_EXCCODE_BIT));
 
-    switch (a0) {
-    case CREATEPROCESS:
-        currentProcess->p_s.reg_v0 = (int) createProcess((state_t*)(currentProcess ->p_s.reg_a1),(support_t*)(currentProcess ->p_s.reg_a2),(nsd_t*)(currentProcess ->p_s.reg_a3));
-        break;
-    case TERMPROCESS:
-        terminateProcess((int*)(currentProcess ->p_s.reg_a1));
-        break;
-    case PASSEREN:
-        Passeren();
-        break;
-    case VERHOGEN:
-        Verhogen();
-        break;
-    case DOIO:
-        currentProcess->p_s.reg_v0 = (int) DO_IO((int*)(currentProcess ->p_s.reg_a1),(int*)(currentProcess ->p_s.reg_a2));
-        break;
-    case GETTIME:
-        currentProcess->p_s.reg_v0 = (int) getTime();
-        break;
-    case CLOCKWAIT:
-        waitForClock();
-        break;
-    case GETSUPPORTPTR:
-        currentProcess->p_s.reg_v0 = (int) getSupportData();
-        break;
-    case GETPROCESSID:
-        currentProcess->p_s.reg_v0 = (int) getProcessID((int*)(currentProcess ->p_s.reg_a1));
-        break;
-    case GETCHILDREN:
-        currentProcess->p_s.reg_v0 = (int) getChildren((int*)(currentProcess ->p_s.reg_a1),(*((int*)(currentProcess ->p_s.reg_a1))));
-        break;
-    
-    default:        // > 11
+        //call Program Trap Handler
+    }
 
-        break;
-    }   
+    else {
+        /* take value frome a0 register */
+        unsigned int a0 = (*((int *)(BIOSDPState->p_s.reg_a0)));
+
+        switch (a0) {
+        case CREATEPROCESS:
+            BIOSDPState->p_s.reg_v0 = (int) createProcess((state_t*)(BIOSDPState ->p_s.reg_a1),(support_t*)(BIOSDPState ->p_s.reg_a2),(nsd_t*)(BIOSDPState ->p_s.reg_a3));
+            break;
+        case TERMPROCESS:
+            terminateProcess((int*)(currentProcess ->p_s.reg_a1));
+            break;
+        case PASSEREN:
+            Passeren();
+            break;
+        case VERHOGEN:
+            Verhogen();
+            break;
+        case DOIO:
+            BIOSDPState->p_s.reg_v0 = (int) DO_IO((int*)(BIOSDPState ->p_s.reg_a1),(int*)(BIOSDPState ->p_s.reg_a2));
+            break;
+        case GETTIME:
+            BIOSDPState->p_s.reg_v0 = (int) getTime();
+            break;
+        case CLOCKWAIT:
+            waitForClock();
+            break;
+        case GETSUPPORTPTR:
+            BIOSDPState->p_s.reg_v0 = (int) getSupportData();
+            break;
+        case GETPROCESSID:
+            BIOSDPState->p_s.reg_v0 = (int) getProcessID((int*)(BIOSDPState ->p_s.reg_a1));
+            break;
+        case GETCHILDREN:
+            BIOSDPState->p_s.reg_v0 = (int) getChildren((int*)(BIOSDPState ->p_s.reg_a1),(*((int*)(BIOSDPState ->p_s.reg_a1))));
+            break;
+        
+        default:        // > 11
+
+            break;
+        }   
 
     /* se la syscall blocca il processo, allora è stato invocato lo scheduler, quindi non si arriverà qui */
-    LDST(&(currentProcess->p_s));
+    LDST(BIOSDPState);
+    }
 }
 
 
@@ -169,7 +179,7 @@ void terminateProcess(int pid){
         } else { 
             outProcQ(readyQueue, proc);
         }
-        while(!emptyChild(proc){ //!!
+        while(!emptyChild(proc)){ //!!
             pcb_t* firstChild = list_first_entry(&prnt->p_child,struct pcb_t, p_child);
             //Kill the siblings
             removeChild(proc);
@@ -181,7 +191,13 @@ void terminateProcess(int pid){
 void Passeren(){
     int* sem = ((int *)currentProcess->p_s.reg_a1);
     if (*sem == 0){     /* blocked */
+
+        /* increase PC to avoid loop on Syscall */
+        BIOSDPState->pc_epc += WORDLEN;
+        currentProcess->p_s = *BIOSDPState;
+        /* current process enters in block state */
         insertBlocked(sem,currentProcess);  // output -> 0 o 1, come mi comporto ??
+
         schedule(); /* suspend currentProcess */
     }
     else if (headBlocked == NULL){      /* there is NO semaphore -> no PCB */
@@ -189,7 +205,12 @@ void Passeren(){
         
     }
     else{       /* resource available, more pcb in sem queue */
+        /* increase PC to avoid loop on Syscall */
+        BIOSDPState->pc_epc += WORDLEN;
+        currentProcess->p_s = *BIOSDPState;
+        /* current process enters in block state */
         insertBlocked(sem,currentProcess);  
+
         /* SCEGLIERE SE RIATTIVARE IL PROCESSO "LIBERATO" O METTERLO NELLA READY QUEUE */
         /* per ora lo inserisco in ready queue e chiamo lo scheduler */
         insertProcQ(readyQueue,removeBlocked);
@@ -224,6 +245,10 @@ cpu_t getTime(){
 
 void waitForClock(){
     /* Always block on Psuedo-clock sem */
+    /* increase PC to avoid loop on Syscall */
+    BIOSDPState->pc_epc += WORDLEN;
+    currentProcess->p_s = *BIOSDPState;
+    /* current process enters in block state */
     insertBlocked(&pseudoClockSem, currentProcess);
     schedule();
     /* sezione 3.6.3 per le V dello pseudo clock semaphore, da gestire nell'interrupt handler*/
