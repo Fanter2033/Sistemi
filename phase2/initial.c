@@ -7,7 +7,7 @@
 #include <umps3/umps/cp0.h>
 
 
-#define ALDEV 50   
+#define ALDEV 42  
 
 /*
     All Lines Devices:
@@ -18,8 +18,7 @@
     10...17 -> Flash Devices
     18...25 -> Network Devices
     26...33 -> Printer Devices
-    34...41 -> Terminal Devices (W)
-    42...49 -> Terminal Devices (R)
+    34...41 -> Terminal Devices
     
 */
 
