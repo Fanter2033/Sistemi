@@ -24,7 +24,7 @@ void schedule(){
         else if (processCount > 0 && SBcount == 0)  /* case 3: deadlock found */
             PANIC();     
     }
-    currentProcess = removeProcQ(readyQueue);
+    currentProcess = removeProcQ(readyQueue);       /* readyQueue is not empty */
     setTIMER(5);
     LDST(&(currentProcess->p_s));
 }
