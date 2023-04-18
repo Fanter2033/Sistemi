@@ -123,12 +123,12 @@ void syscallExcHandler(){
             BIOSDPState->reg_v0 = (int) getSupportData();
             break;
         case GETPROCESSID:
-<<<<<<< Updated upstream
+
             BIOSDPState->reg_v0 = (int) getProcessID((int*)(BIOSDPState ->reg_a1));
             break;
         case GETCHILDREN:
             BIOSDPState->reg_v0 = (int) getChildren((int*)(BIOSDPState ->reg_a1),(*((int*)(BIOSDPState ->reg_a1))));
-=======
+
             BIOSDPState->p_s.reg_v0 = (int) getProcessID(
                 (int*)(BIOSDPState ->p_s.reg_a1));
             break;
@@ -136,7 +136,7 @@ void syscallExcHandler(){
             BIOSDPState->p_s.reg_v0 = (int) getChildren(
                 (int*)(BIOSDPState ->p_s.reg_a1),
                 (*((int*)(BIOSDPState ->p_s.reg_a1))));
->>>>>>> Stashed changes
+
             break;
         
         default:        // > 11
