@@ -17,8 +17,10 @@ extern void schedule();
 extern void interruptHandler();
 extern int pseudoClockSem;
 extern int deviceSem;
+extern int pseudoClockSem;
 extern void P(int* sem); //dichiarato in interrupts.c
 state_t* BIOSDPState;
+
 
 //TODO list
 // prima di ogni schedule(), bisogna incrementare il TOD (sezione 3.8)
@@ -192,8 +194,8 @@ void terminateProcess(int pid){
         /*the process is either blocked at a semaphore or on the ready queue*/
         if(proc->p_semAdd!=NULL){
             /*the semaphore is incremente only if it is not a device one*/
-            if(!(deviceSem <= proc->p_semAdd && proc->p_semAdd <= deviceSem + ALDEV)){ // *sizeof(int) dovrebbe essere implicito in C
-                proc->p_semAdd +=1;
+            if(!((deviceSem <= proc->p_semAdd && proc->p_semAdd <= deviceSem + ALDEV)||proc->p_semAdd ==pseudoClockSem)){ // *sizeof(int) dovrebbe essere implicito in C
+                *(proc->p_semAdd) +=1; // = 1
             }
             outBlocked(proc);
             SBcount--;
