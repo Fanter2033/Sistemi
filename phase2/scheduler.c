@@ -11,6 +11,8 @@ extern int SBcount; //SoftBlocked
 extern struct list_head* readyQueue;
 extern pcb_t* currentProcess;
 
+#define MS(NUM) NUM*100 * (*((cpu_t *) TIMESCALEADDR))
+
 void schedule(){
     if (emptyProcQ(readyQueue)){
         if (processCount==0)                         /* case 1: nothing else to do */
@@ -18,13 +20,16 @@ void schedule(){
         else if (processCount > 0 && SBcount > 0) {  /* case 2: waiting for some I/O interrupt */
 
             /* interrupts enabled, PLT disabled */  
-            setSTATUS( STATUS_IEp | STATUS_KUp | STATUS_IM_MASK & (~STATUS_TE) );    // KU ( Kernel Mode ) on ??
+            setSTATUS( IEPON | IMON & (~STATUS_TE) );
             WAIT();                           
         }
         else if (processCount > 0 && SBcount == 0)  /* case 3: deadlock found */
             PANIC();     
     }
     currentProcess = removeProcQ(readyQueue);       /* readyQueue is not empty */
-    setTIMER(5);
-    LDST(&(currentProcess->p_s));
+    setTIMER(MS(5));
+    addokbuf("prima dell'inizio del primo processo, addios\n");
+    //ERRORE: pensa che non siamo in Kernel Mode, quindi tira un BP (BREAK exception)
+    // 7.3.1
+    LDST(&currentProcess->p_s);
 }

@@ -109,6 +109,87 @@ void p5sys(), p8root(), child1(), child2(), p8leaf1(), p8leaf2(), p8leaf3(),
 extern void p5gen();
 extern void p5mm();
 
+//TEMPORANEO
+
+char   okbuf[2048]; /* sequence of progress messages */
+char   errbuf[128]; /* contains reason for failing */
+char   msgbuf[128]; /* nonrecoverable error message before shut down */
+char  *mp = okbuf;
+
+
+#define TRANSMITTED 5
+#define ACK         1
+#define PRINTCHR    2
+#define CHAROFFSET  8
+#define STATUSMASK  0xFF
+#define TERM0ADDR   0x10000254
+
+typedef unsigned int devreg;
+
+/* This function returns the terminal transmitter status value given its address */
+devreg termstat(memaddr *stataddr) {
+    return ((*stataddr) & STATUSMASK);
+}
+
+/* This function prints a string on specified terminal and returns TRUE if
+ * print was successful, FALSE if not   */
+unsigned int termprint(char *str, unsigned int term) {
+    memaddr     *statusp;
+    memaddr     *commandp;
+    devreg       stat;
+    devreg       cmd;
+    unsigned int error = FALSE;
+
+    if (term < DEVPERINT) {
+        /* terminal is correct */
+        /* compute device register field addresses */
+        statusp  = (devreg *)(TERM0ADDR + (term * DEVREGSIZE) + (TRANSTATUS * DEVREGLEN));
+        commandp = (devreg *)(TERM0ADDR + (term * DEVREGSIZE) + (TRANCOMMAND * DEVREGLEN));
+
+        /* test device status */
+        stat = termstat(statusp);
+        if (stat == READY || stat == TRANSMITTED) {
+            /* device is available */
+
+            /* print cycle */
+            while (*str != EOS && !error) {
+                cmd       = (*str << CHAROFFSET) | PRINTCHR;
+                *commandp = cmd;
+
+                /* busy waiting */
+                stat = termstat(statusp);
+                while (stat == BUSY)
+                    stat = termstat(statusp);
+
+                /* end of wait */
+                if (stat != TRANSMITTED)
+                    error = TRUE;
+                else
+                    /* move to next char */
+                    str++;
+            }
+        } else
+            /* device is not available */
+            error = TRUE;
+    } else
+        /* wrong terminal device number */
+        error = TRUE;
+
+    return (!error);
+}
+
+
+/* This function placess the specified character string in okbuf and
+ *	causes the string to be written out to terminal0 */
+void addokbuf(char *strp) {
+    char *tstrp = strp;
+    while ((*mp++ = *strp++) != '\0')
+        ;
+    mp--;
+    termprint(tstrp, 0);
+}
+//
+
 
 /* a procedure to print on terminal 0 */
 void print(char *msg) {
@@ -146,6 +227,7 @@ void uTLB_RefillHandler() {
 /*                 p1 -- the root process                            */
 /*                                                                   */
 void test() {
+    addokbuf("inizio il test vero e proprio, ciao kernel");
     SYSCALL(VERHOGEN, (int)&sem_testsem, 0, 0); /* V(sem_testsem)   */
 
     print("p1 v(sem_testsem)\n");

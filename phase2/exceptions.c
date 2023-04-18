@@ -90,10 +90,10 @@ void syscallExcHandler(){
         unsigned int a0 = (*((int *)(BIOSDPState->reg_a0)));
         switch (a0) {
         case CREATEPROCESS:
-            BIOSDPState->p_s.reg_v0 = (int) createProcess(
-                (state_t*)(BIOSDPState ->p_s.reg_a1),
-                (support_t*)(BIOSDPState ->p_s.reg_a2),
-                (nsd_t*)(BIOSDPState ->p_s.reg_a3));
+            BIOSDPState->reg_v0 = (int) createProcess(
+                (state_t*)(BIOSDPState->reg_a1),
+                (support_t*)(BIOSDPState->reg_a2),
+                (nsd_t*)(BIOSDPState->reg_a3));
             break;
         case TERMPROCESS:
             terminateProcess((int*)(currentProcess ->p_s.reg_a1));
@@ -105,9 +105,9 @@ void syscallExcHandler(){
             Verhogen();
             break;
         case DOIO:
-            BIOSDPState->p_s.reg_v0 = (int) DO_IO(
-                (int*)(BIOSDPState ->p_s.reg_a1),
-                (int*)(BIOSDPState ->p_s.reg_a2));
+            BIOSDPState->reg_v0 = (int) DO_IO(
+                (int*)(BIOSDPState->reg_a1),
+                (int*)(BIOSDPState->reg_a2));
             break;
         case GETTIME:
             BIOSDPState->reg_v0 = (int) getTime();
@@ -120,16 +120,12 @@ void syscallExcHandler(){
             break;
         case GETPROCESSID:
             BIOSDPState->reg_v0 = (int) getProcessID(
-                (int*)(BIOSDPState ->reg_a1));
+                (int*)(BIOSDPState->reg_a1));
             break;
         case GETCHILDREN:
-            BIOSDPState->p_s.reg_v0 = (int) getProcessID(
-                (int*)(BIOSDPState ->p_s.reg_a1));
-            break;
-        case GETCHILDREN:
-            BIOSDPState->p_s.reg_v0 = (int) getChildren(
-                (int*)(BIOSDPState ->p_s.reg_a1),
-                (*((int*)(BIOSDPState ->p_s.reg_a1))));
+            BIOSDPState->reg_v0 = (int) getChildren(
+                (int*)(BIOSDPState->reg_a1),
+                (*((int*)(BIOSDPState->reg_a1))));
             break;
         
         default:        // > 11
@@ -215,7 +211,7 @@ void terminateProcess(int pid){
 } 
 
 void Passeren(){
-    int* sem = ((int *)BIOSDPState->p_s.reg_a1);
+    int* sem = ((int *)BIOSDPState->reg_a1);
     if (*sem == 0){     /* blocked */
 
         /* increase PC to avoid loop on Syscall */
@@ -333,6 +329,7 @@ int findDevice(int* cmdAddr){
     18...25 -> Network Devices
     26...33 -> Printer Devices
     34...41 -> Terminal Devices (W)
+
     DEV_IL_START = 3;
     */
 

@@ -8,33 +8,38 @@
 #include <umps3/umps/arch.h>
 
 /* take T and N and return the n-th bit of T */
+#define ALDEV 42
+/* find nth bit of n */
+#define NBIT(T,N) ((T & (1 << N)) >> N) //non so se si può fare 
+
 extern int findDevice(int* cmdAddr);
 extern int processCount;
 extern int SBcount;
+extern int deviceSem[ALDEV]; 
 extern struct list_head* readyQueue;
 extern pcb_t* currentProcess;
 extern void schedule();
 extern state_t* BIOSDPState;
 
-#define NBIT(T,N) ((T & (1U << N)) >> N) //non so se si può fare
-#define PLT 1
-#define INT 2
+void P(int* sem);
+void V(int* sem);
+
 
 void interruptHandler(){
     /* take causeIP part as integer */
-    unsigned int causeIP = ((getCAUSE() & CAUSE_IP_MASK) >> CAUSE_IP_BIT(0));
-    int line = 1; /* line 0 not considered (NO multiprocessor) */
-
-    /* check goes from most significant bit to lower, so the priority is considered*/
+    unsigned int causeIP = ((getCAUSE() & CAUSE_IP_MASK) >> CAUSE_IP_BIT(0)); 
+    /* line 0 not considered (NO multiprocessor) */
+    int line = 1; 
+    // se non funge CauseIP vedere se si può considerare come array
+    /* check goes from most significant bit to lower, so the priority is considered */
     while (causeIP != 0){   /* loop to resolve all interrupts */
-
         if (NBIT(causeIP,line) == ON){     //INTERRUPT LINE ON
             switch (line){
-            case PLT:
+            case IL_CPUTIMER:
                 //3.6.2
                 break;
             
-            case INT:
+            case IL_TIMER:
                 //3.6.3
                 break;
 
@@ -42,6 +47,8 @@ void interruptHandler(){
                 nonTimerInterruptHandler(line);
                 break;
             }
+            /* n-th bit line resolved, so 1->0*/
+            causeIP &= (0 << line);
         }
         line++;
     }
@@ -51,47 +58,65 @@ void interruptHandler(){
 
 void nonTimerInterruptHandler(int interruptLine){
     /* to store the Bit Map of line */
-    int lineBitMap;
+    int deviceBitMap;
+    int nBit=0;
 
     switch (interruptLine){
-        case DISKINT:
-            int nBit = 0; /* iterator on all bit of integer value */
-            lineBitMap = CDEV_BITMAP_ADDR(DISKINT);
+        case IL_DISK:
+            nBit = 0; /* iterator on all bit of integer value */
+            deviceBitMap = CDEV_BITMAP_ADDR(IL_DISK);
         
-            while(lineBitMap != 0){
-                if (NBIT(lineBitMap,nBit) == ON)
-                    handleInterrupt();
+            while(deviceBitMap != 0){
+                if (NBIT(deviceBitMap,nBit) == ON){
+                    handleInterrupt(interruptLine,nBit);
+                    deviceBitMap &= (0<<nBit);
+                }
+                nBit++;
             }
             break;
 
-        case FLASHINT:
-            int nBit = 0;
-            lineBitMap = CDEV_BITMAP_ADDR(FLASHINT);
+        case IL_FLASH:
+            nBit = 0;
+            deviceBitMap = CDEV_BITMAP_ADDR(IL_FLASH);
 
-            while(lineBitMap != 0){
-                if (NBIT(lineBitMap,nBit) == ON)
-                    handleInterrupt();
+            while(deviceBitMap != 0){
+                if (NBIT(deviceBitMap,nBit) == ON){
+                    handleInterrupt(interruptLine,nBit);
+                    deviceBitMap &= (0<<nBit);
+                }
+                nBit++; 
             }
             break;
         
-        case NETWINT:
-            int nBit = 0;
-            lineBitMap = CDEV_BITMAP_ADDR(NETWINT);
-            break;
-        
-        case PRINTINTERRUPT:
-            int nBit = 0;
-            lineBitMap = CDEV_BITMAP_ADDR(PRINTINTERRUPT);
+        case IL_ETHERNET:
+            nBit = 0;
+            deviceBitMap = CDEV_BITMAP_ADDR(IL_ETHERNET);
 
-            while(lineBitMap != 0){
-                if (NBIT(lineBitMap,nBit) == ON)
-                    handleInterrupt();
+            while(deviceBitMap != 0){
+                if (NBIT(deviceBitMap,nBit) == ON){
+                    handleInterrupt(interruptLine,nBit);
+                    deviceBitMap &= (0<<nBit);
+                }
+                nBit++; 
             }
             break;
         
-        case TERMINT:
-            int nBit = 0;
-            lineBitMap = CDEV_BITMAP_ADDR(TERMINT);
+        case IL_PRINTER:
+            nBit = 0;
+            deviceBitMap = CDEV_BITMAP_ADDR(IL_PRINTER);
+
+            while(deviceBitMap != 0){
+                if (NBIT(deviceBitMap,nBit) == ON){
+                    handleInterrupt(interruptLine,nBit);
+                    deviceBitMap &= (0<<nBit);
+                }
+                nBit++;
+            }
+            break;
+        
+        case IL_TERMINAL:
+            nBit = 0;
+            deviceBitMap = CDEV_BITMAP_ADDR(TERMINT);
             //capire come gestire questo degli interrupt
             break;
         
@@ -109,8 +134,8 @@ void handleInterrupt(int line, int device){
     devReg->command = ACK;
 
     /* V on semaphore */
-    int* sem = findDevice((int)devReg);     //Da controllare se è giusto
-    pcb_t* waitingPCB = headBlocked(sem);
+    int* sem = deviceSem[findDevice((int)devReg)];     //Da controllare se è giusto
+    pcb_t* waitingPCB = removeBlocked(sem);
     if (waitingPCB != NULL){
         /* unlock PCB */
         V(sem);
@@ -122,25 +147,26 @@ void handleInterrupt(int line, int device){
 }
 
 /* P on device semaphore */
-void P(int sem*){       //VEDERE SE SI PUÒ GENERALIZZARE LA P DELLE SYS
+void P(int* sem){       //VEDERE SE SI PUÒ GENERALIZZARE LA P DELLE SYS
     if (*sem ==0 ){
         insertBlocked(sem, currentProcess);
         SBcount++;
     }
-    else if (headBlocked(sem)!=NULL)
+    else if (headBlocked(sem)!=NULL){
         insertBlocked(sem,currentProcess);
         insertProcQ(readyQueue,removeBlocked(sem));
         SBcount++;
+    }
     else{
         // in realtà questo è un caso in cui non arriva mai visto che sono tutti 
         //semafori di sincronizzazione, ergo partono da 0
         sem--;
-        
+        SBcount++;
     }
 }
 
 /* V on device semaphore */
-void V(int sem*){       //VEDERE SE SI PUÒ GENERALIZZARE LA V DELLE SYS
+void V(int* sem){       //VEDERE SE SI PUÒ GENERALIZZARE LA V DELLE SYS
 /* 
     credo si possa migliorare, non andrà mai a 1 visto che sono di sincronizzazione 
     appena ci arriva in realtà ripassa subito a 0
@@ -149,10 +175,11 @@ void V(int sem*){       //VEDERE SE SI PUÒ GENERALIZZARE LA V DELLE SYS
         insertBlocked(sem, currentProcess);
         SBcount++;
     }
-    else if (headBlocked(sem)!=NULL)
+    else if (headBlocked(sem)!=NULL){
         insertBlocked(sem,currentProcess);
         insertProcQ(readyQueue,removeBlocked(sem));
         SBcount++;
+    }
     else{
         sem++;
         SBcount--;

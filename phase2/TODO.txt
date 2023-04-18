@@ -19,4 +19,7 @@ TODO:
 
 Da chiedere a Renzo:
 - senso di una V bloccante
-- perchè nella sezione 3.9 c'è scritto che un semaforo può avere un valore negativo se i semafori sono tutti bloccanti
+- perchè nella sezione 3.9 c'è scritto che un semaforo può 
+    avere un valore negativo se i semafori sono tutti bloccanti
+- caso in cui arriva un interrupt(interrupt handler) e alla 
+    fine della risoluzione non c'è processo corrente nè ci sono processi in ready queue
