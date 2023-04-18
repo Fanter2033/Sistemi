@@ -4,9 +4,10 @@
 #include <pandos_const.h>
 #include <pandos_types.h>
 #include <umps3/umps/cp0.h>
+#include <umps3/umps/arch.h>
 #include <umps3/umps/libumps.h>
 
-#define ALDEV 50
+#define ALDEV 42
 
 extern int processCount;
 extern int SBcount;
@@ -15,6 +16,7 @@ extern pcb_t* currentProcess;
 extern void schedule();
 extern void interruptHandler();
 extern int pseudoClockSem;
+extern int deviceSem;
 state_t* BIOSDPState;
 
 //TODO list
@@ -82,11 +84,13 @@ void syscallExcHandler(){
 
     else {
         /* take value frome a0 register */
-        unsigned int a0 = (*((int *)(BIOSDPState->p_s.reg_a0)));
-
+        unsigned int a0 = (*((int *)(BIOSDPState->reg_a0)));
         switch (a0) {
         case CREATEPROCESS:
-            BIOSDPState->p_s.reg_v0 = (int) createProcess((state_t*)(BIOSDPState ->p_s.reg_a1),(support_t*)(BIOSDPState ->p_s.reg_a2),(nsd_t*)(BIOSDPState ->p_s.reg_a3));
+            BIOSDPState->p_s.reg_v0 = (int) createProcess(
+                (state_t*)(BIOSDPState ->p_s.reg_a1),
+                (support_t*)(BIOSDPState ->p_s.reg_a2),
+                (nsd_t*)(BIOSDPState ->p_s.reg_a3));
             break;
         case TERMPROCESS:
             terminateProcess((int*)(currentProcess ->p_s.reg_a1));
@@ -98,22 +102,31 @@ void syscallExcHandler(){
             Verhogen();
             break;
         case DOIO:
-            BIOSDPState->p_s.reg_v0 = (int) DO_IO((int*)(BIOSDPState ->p_s.reg_a1),(int*)(BIOSDPState ->p_s.reg_a2));
+            BIOSDPState->p_s.reg_v0 = (int) DO_IO(
+                (int*)(BIOSDPState ->p_s.reg_a1),
+                (int*)(BIOSDPState ->p_s.reg_a2));
             break;
         case GETTIME:
-            BIOSDPState->p_s.reg_v0 = (int) getTime();
+            BIOSDPState->reg_v0 = (int) getTime();
             break;
         case CLOCKWAIT:
             waitForClock();
             break;
         case GETSUPPORTPTR:
-            BIOSDPState->p_s.reg_v0 = (int) getSupportData();
+            BIOSDPState->reg_v0 = (int) getSupportData();
             break;
         case GETPROCESSID:
-            BIOSDPState->p_s.reg_v0 = (int) getProcessID((int*)(BIOSDPState ->p_s.reg_a1));
+            BIOSDPState->reg_v0 = (int) getProcessID(
+                (int*)(BIOSDPState ->reg_a1));
             break;
         case GETCHILDREN:
-            BIOSDPState->p_s.reg_v0 = (int) getChildren((int*)(BIOSDPState ->p_s.reg_a1),(*((int*)(BIOSDPState ->p_s.reg_a1))));
+            BIOSDPState->p_s.reg_v0 = (int) getProcessID(
+                (int*)(BIOSDPState ->p_s.reg_a1));
+            break;
+        case GETCHILDREN:
+            BIOSDPState->p_s.reg_v0 = (int) getChildren(
+                (int*)(BIOSDPState ->p_s.reg_a1),
+                (*((int*)(BIOSDPState ->p_s.reg_a1))));
             break;
         
         default:        // > 11
@@ -189,7 +202,7 @@ void terminateProcess(int pid){
         while(!emptyChild(proc)){
             /* removeChild removes the first child and moves his first brother in its place:
             it only exits the loop when all the siblings have been removed */
-            pcb_t* firstChild = list_first_entry(&prnt->p_child,struct pcb_t, p_child);
+            pcb_t* firstChild = list_first_entry(&proc->p_child,struct pcb_t, p_child);
             removeChild(proc);
             /*terminates the subtree of the first child*/
             terminateProcess(firstChild->p_pid);
@@ -242,12 +255,109 @@ void Verhogen(){
             sem_value++;
     }
 
+
 /* Effettua un’operazione di I/O. */
 int DO_IO(int *cmdAddr, int *cmdValues){
+    /* 
+    I device si trovano a 
+        0x1000.0054 - 0x1000.0063 Line 3, Device 0 (Device Register)
+        0x1000.0064 - 0x1000.0073 Line 3, Device 1 (Device Register)
+        ...
+        0x1000.00C4 - 0x1000.00D3 Line 3, device 7 (Device Register)
+
+        0x1000.00D4 - 0x1000.0153 Line 4, device 0-7 (Device Register)
+        0x1000.0154 - 0x1000.01D3 Line 5, device 0-7 (Device Register)
+        0x1000.01D4 - 0x1000.0253 Line 6, device 0-7 (Device Register)
+        0.1000.0254 - 0x1000.02D3 Line 7, device 0-7 (Device Register)
+
+    Disk devices
+    Flash devices
+    Network Adapters
+    Printer devices
+    Terminal devices (receive & transmit)
+
+    Base + 0x4 è dove mettere il comando (non per il terminale)
+
+    Installed device bitmap ci dice a quali interrupt sono collegati i device
+    Interrupt device bitmap, come sopra ma dice quale interrupt è attivo
+    */
+
+    /*Find the device function*/
+    int device = findDevice(cmdAddr);
+
+    /*Write command Values from command Address */
+        /*devreg.dtp.command oppure 
+        devreg.term.recv_command/devreg.term.transm_command*/
+
+    if (device<0){
+        return -1;
+    }
+    else if (device < 34){
+        /*non-terminal*/
+        dtpreg_t* regdevice = (dtpreg_t*)(cmdValues);
+        cmdAddr = regdevice;
+    }
+    else {
+        /*terminal*/
+        termreg_t* regterm = (termreg_t*)(cmdValues);
+        cmdAddr = regterm;
+    }
+
     
+    /*Block the process on that device */
+    int* sem = deviceSem+device;
+    currentProcess->p_s = *BIOSDPState;
+    insertBlocked(&sem, currentProcess);
+    schedule();
+/*  
+    At the completion of the I-O operation the device register values 
+    are copied back in the cmdValues array. The return value of this system 
+    call is 0 in case of success, -1 otherwise.
+    Dobbiamo ritornare qualcosa?
+*/
     return 0;
 }
 
+int findDevice(int* cmdAddr){
+    /*
+    All Lines Devices:
+
+    0 -> PLT
+    1 -> Interval Timer
+    2...9 -> Disk Devices
+    10...17 -> Flash Devices
+    18...25 -> Network Devices
+    26...33 -> Printer Devices
+    34...41 -> Terminal Devices (W)
+    DEV_IL_START = 3;
+    */
+
+    /* DEV_REG_ADDR ci restituisce l'indirizzo della linea IL_*, del devise 0-N_DEV_PER_IL*/
+    int value = *(cmdAddr); //è la base
+    if (value < (memaddr)DEV_REG_START || value >=(memaddr) DEV_REG_END){
+        return -1;
+    }
+    else if (value >= (memaddr) DEV_REG_ADDR(IL_DISK, 0) && value < (memaddr)DEV_REG_ADDR(IL_DISK, N_DEV_PER_IL)){
+        /*disk device*/
+        return  (DEV_REG_ADDR(IL_DISK, N_DEV_PER_IL)-value)+2; 
+    }
+    else if (value >= (memaddr)DEV_REG_ADDR(IL_FLASH, 0) && value < (memaddr) DEV_REG_ADDR(IL_FLASH, N_DEV_PER_IL)){
+        /*flash device*/
+        return  (DEV_REG_ADDR(IL_FLASH, N_DEV_PER_IL)-value)+10;
+    }
+    else if (value >= (memaddr)DEV_REG_ADDR(IL_ETHERNET, 0) && value < (memaddr) DEV_REG_ADDR(IL_ETHERNET, N_DEV_PER_IL)){
+        /*network */
+        return  (DEV_REG_ADDR(IL_ETHERNET, N_DEV_PER_IL)-value)+18;
+    }
+    else if (value >= (memaddr)DEV_REG_ADDR(IL_PRINTER, 0) && value < (memaddr) DEV_REG_ADDR(IL_PRINTER, N_DEV_PER_IL)){
+        /*Printer*/
+        return (DEV_REG_ADDR(IL_PRINTER, N_DEV_PER_IL)-value)+26;
+    }
+    else if (value >= (memaddr)DEV_REG_ADDR(IL_TERMINAL, 0) && value < (memaddr) DEV_REG_ADDR(IL_TERMINAL, N_DEV_PER_IL)){
+        /*terminal*/
+        return (DEV_REG_ADDR(IL_TERMINAL, N_DEV_PER_IL)-value)+34;
+    }
+}
 /*Restituisce il tempo di esecuzione (in microsecondi, quindi *1000?) del processo */
 cpu_t getTime(){
     return currentProcess->p_time; /* v0 inizializzata dopo*/
@@ -289,12 +399,13 @@ int getProcessID(int parent){
 /*Deve ritornare il numero di figli con lo stesso namespace */
 int getChildren(int* children, int size){
     int valueToReturn = 0;
-    struct pcb_t* firstChild = currentProcess->p_child;
+    pcb_t* firstChild = list_first_entry(&currentProcess->p_child,struct pcb_t,p_child);
     
     if (!emptyChild(currentProcess)){                            // controllo se il pcb ha figli
         nsd_t* currentNs = getNamespace(currentProcess, NS_PID);
         struct pcb_t* iterator = NULL;
-        list_for_each_entry(iterator,firstChild,p_sib){
+        
+        list_for_each_entry(iterator,&firstChild->p_sib,p_sib){
             if (currentNs == getNamespace(iterator, NS_PID)){   
                 if (size < valueToReturn)
                     *(children + valueToReturn) = iterator->p_pid;// finche riesco assegno alla cella contigua dell'array il pid del processo figlio 

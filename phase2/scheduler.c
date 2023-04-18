@@ -7,26 +7,24 @@
 #include <umps3/umps/cp0.h>
 
 extern int processCount;
-extern int SBcount;
+extern int SBcount; //SoftBlocked
 extern struct list_head* readyQueue;
 extern pcb_t* currentProcess;
 
 void schedule(){
     if (emptyProcQ(readyQueue)){
-        if (processCount==0) 
-            HALT();        /* nothing else to do */
-        else if (processCount > 0 && SBcount > 0) {
+        if (processCount==0)                         /* case 1: nothing else to do */
+            HALT();                                 
+        else if (processCount > 0 && SBcount > 0) {  /* case 2: waiting for some I/O interrupt */
 
-            /* interrupts enabled, PLT disabled */
-                /* KU ( Kernel Mode ) on ?? */
-            setSTATUS( STATUS_IEp | STATUS_KUp | STATUS_IM_MASK & (~STATUS_TE) );    
-            WAIT();     /* waiting for I/O interrupt */
-
+            /* interrupts enabled, PLT disabled */  
+            setSTATUS( STATUS_IEp | STATUS_KUp | STATUS_IM_MASK & (~STATUS_TE) );    // KU ( Kernel Mode ) on ??
+            WAIT();                           
         }
-        else if (processCount > 0 && SBcount == 0) 
-            PANIC();     /* deadlock found */
+        else if (processCount > 0 && SBcount == 0)  /* case 3: deadlock found */
+            PANIC();     
     }
-    currentProcess = removeProcQ(readyQueue);
+    currentProcess = removeProcQ(readyQueue);       /* readyQueue is not empty */
     setTIMER(5);
     LDST(&(currentProcess->p_s));
 }

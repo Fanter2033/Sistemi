@@ -73,7 +73,7 @@ int emptyChild(pcb_t *p){
 
 void insertChild(pcb_t* prnt, pcb_t* p){
     if (emptyChild(prnt)) prnt->p_child.next = &p->p_child; //case1: no child, p in the first
-    else {          //case2: p will be in the sib list of the child
+    else {                                                  //case2: p will be in the sib list of the child
         pcb_t* firstChild = list_first_entry(&prnt->p_child,struct pcb_t,p_child); 
         list_add_tail(&p->p_sib,&firstChild->p_sib);
     }
