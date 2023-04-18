@@ -17,6 +17,7 @@ extern void schedule();
 extern void interruptHandler();
 extern int pseudoClockSem;
 extern int deviceSem;
+extern void P(int* sem); //dichiarato in interrupts.c
 state_t* BIOSDPState;
 
 //TODO list
@@ -212,7 +213,7 @@ void terminateProcess(int pid){
 } 
 
 void Passeren(){
-    int* sem = ((int *)currentProcess->p_s.reg_a1);
+    int* sem = ((int *)BIOSDPState->p_s.reg_a1);
     if (*sem == 0){     /* blocked */
 
         /* increase PC to avoid loop on Syscall */
@@ -223,11 +224,7 @@ void Passeren(){
 
         schedule(); /* suspend currentProcess */
     }
-    else if (headBlocked == NULL){      /* there is NO semaphore -> no PCB */
-        *sem-- ;
-        
-    }
-    else{       /* resource available, more pcb in sem queue */
+    else if (headBlocked(sem) != NULL){   /* more pcb in sem queue */ 
         /* increase PC to avoid loop on Syscall */
         BIOSDPState->pc_epc += WORDLEN;
         currentProcess->p_s = *BIOSDPState;
@@ -236,9 +233,14 @@ void Passeren(){
 
         /* SCEGLIERE SE RIATTIVARE IL PROCESSO "LIBERATO" O METTERLO NELLA READY QUEUE */
         /* per ora lo inserisco in ready queue e chiamo lo scheduler */
-        insertProcQ(readyQueue,removeBlocked);
-        schedule();
+        insertProcQ(readyQueue,removeBlocked(sem));
+        schedule();  
+        
+        
     }
+    else      /* there is NO semaphore -> no PCB */ 
+        *sem-- ;
+
 }
 
 void Verhogen(){
@@ -307,7 +309,7 @@ int DO_IO(int *cmdAddr, int *cmdValues){
     /*Block the process on that device */
     int* sem = deviceSem+device;
     currentProcess->p_s = *BIOSDPState;
-    insertBlocked(&sem, currentProcess);
+    P(sem);
     schedule();
 /*  
     At the completion of the I-O operation the device register values 

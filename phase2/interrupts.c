@@ -5,9 +5,18 @@
 #include <pandos_types.h>
 #include <umps3/umps/cp0.h>
 #include <umps3/umps/libumps.h>
+#include <umps3/umps/arch.h>
 
 /* take T and N and return the n-th bit of T */
-#define IPLINE(T,N) ((T & (1U << N)) >> N) //non so se si può fare
+extern int findDevice(int* cmdAddr);
+extern int processCount;
+extern int SBcount;
+extern struct list_head* readyQueue;
+extern pcb_t* currentProcess;
+extern void schedule();
+extern state_t* BIOSDPState;
+
+#define NBIT(T,N) ((T & (1U << N)) >> N) //non so se si può fare
 #define PLT 1
 #define INT 2
 
@@ -19,7 +28,7 @@ void interruptHandler(){
     /* check goes from most significant bit to lower, so the priority is considered*/
     while (causeIP != 0){   /* loop to resolve all interrupts */
 
-        if (IPLINE(causeIP,line) == ON){     //INTERRUPT LINE ON
+        if (NBIT(causeIP,line) == ON){     //INTERRUPT LINE ON
             switch (line){
             case PLT:
                 //3.6.2
@@ -36,27 +45,116 @@ void interruptHandler(){
         }
         line++;
     }
+    /* return control to Current Process */
+    LDST(BIOSDPState);
 }
 
 void nonTimerInterruptHandler(int interruptLine){
-    
+    /* to store the Bit Map of line */
+    int lineBitMap;
+
     switch (interruptLine){
         case DISKINT:
+            int nBit = 0; /* iterator on all bit of integer value */
+            lineBitMap = CDEV_BITMAP_ADDR(DISKINT);
+        
+            while(lineBitMap != 0){
+                if (NBIT(lineBitMap,nBit) == ON)
+                    handleInterrupt();
+            }
             break;
 
         case FLASHINT:
+            int nBit = 0;
+            lineBitMap = CDEV_BITMAP_ADDR(FLASHINT);
+
+            while(lineBitMap != 0){
+                if (NBIT(lineBitMap,nBit) == ON)
+                    handleInterrupt();
+            }
             break;
         
         case NETWINT:
+            int nBit = 0;
+            lineBitMap = CDEV_BITMAP_ADDR(NETWINT);
             break;
         
         case PRINTINTERRUPT:
+            int nBit = 0;
+            lineBitMap = CDEV_BITMAP_ADDR(PRINTINTERRUPT);
+
+            while(lineBitMap != 0){
+                if (NBIT(lineBitMap,nBit) == ON)
+                    handleInterrupt();
+            }
             break;
         
         case TERMINT:
+            int nBit = 0;
+            lineBitMap = CDEV_BITMAP_ADDR(TERMINT);
+            //capire come gestire questo degli interrupt
             break;
         
         default:
             break;
+    }
+}
+
+void handleInterrupt(int line, int device){
+    /* take device register from Address */
+    dtpreg_t* devReg = ((dtpreg_t *) DEV_REG_ADDR(line, device));
+    /* save off the status from device register */
+    unsigned int status = devReg -> status;
+    /* ACK the interrupt */
+    devReg->command = ACK;
+
+    /* V on semaphore */
+    int* sem = findDevice((int)devReg);     //Da controllare se è giusto
+    pcb_t* waitingPCB = headBlocked(sem);
+    if (waitingPCB != NULL){
+        /* unlock PCB */
+        V(sem);
+        waitingPCB ->p_s.reg_v0 = status;
+        /* insert in readyQueue */
+        insertProcQ(readyQueue,waitingPCB);
+    }
+    
+}
+
+/* P on device semaphore */
+void P(int sem*){       //VEDERE SE SI PUÒ GENERALIZZARE LA P DELLE SYS
+    if (*sem ==0 ){
+        insertBlocked(sem, currentProcess);
+        SBcount++;
+    }
+    else if (headBlocked(sem)!=NULL)
+        insertBlocked(sem,currentProcess);
+        insertProcQ(readyQueue,removeBlocked(sem));
+        SBcount++;
+    else{
+        // in realtà questo è un caso in cui non arriva mai visto che sono tutti 
+        //semafori di sincronizzazione, ergo partono da 0
+        sem--;
+        
+    }
+}
+
+/* V on device semaphore */
+void V(int sem*){       //VEDERE SE SI PUÒ GENERALIZZARE LA V DELLE SYS
+/* 
+    credo si possa migliorare, non andrà mai a 1 visto che sono di sincronizzazione 
+    appena ci arriva in realtà ripassa subito a 0
+*/
+    if (*sem ==1 ){
+        insertBlocked(sem, currentProcess);
+        SBcount++;
+    }
+    else if (headBlocked(sem)!=NULL)
+        insertBlocked(sem,currentProcess);
+        insertProcQ(readyQueue,removeBlocked(sem));
+        SBcount++;
+    else{
+        sem++;
+        SBcount--;
     }
 }
