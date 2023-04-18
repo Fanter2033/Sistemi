@@ -86,14 +86,10 @@ void syscallExcHandler(){
         unsigned int a0 = (*((int *)(BIOSDPState->reg_a0)));
         switch (a0) {
         case CREATEPROCESS:
-<<<<<<< Updated upstream
-            BIOSDPState->reg_v0 = (int) createProcess((state_t*)(BIOSDPState ->reg_a1),(support_t*)(BIOSDPState ->reg_a2),(nsd_t*)(BIOSDPState ->reg_a3));
-=======
             BIOSDPState->p_s.reg_v0 = (int) createProcess(
                 (state_t*)(BIOSDPState ->p_s.reg_a1),
                 (support_t*)(BIOSDPState ->p_s.reg_a2),
                 (nsd_t*)(BIOSDPState ->p_s.reg_a3));
->>>>>>> Stashed changes
             break;
         case TERMPROCESS:
             terminateProcess((int*)(currentProcess ->p_s.reg_a1));
@@ -105,13 +101,9 @@ void syscallExcHandler(){
             Verhogen();
             break;
         case DOIO:
-<<<<<<< Updated upstream
-            BIOSDPState->reg_v0 = (int) DO_IO((int*)(BIOSDPState ->reg_a1),(int*)(BIOSDPState ->reg_a2));
-=======
             BIOSDPState->p_s.reg_v0 = (int) DO_IO(
                 (int*)(BIOSDPState ->p_s.reg_a1),
                 (int*)(BIOSDPState ->p_s.reg_a2));
->>>>>>> Stashed changes
             break;
         case GETTIME:
             BIOSDPState->reg_v0 = (int) getTime();
@@ -123,12 +115,10 @@ void syscallExcHandler(){
             BIOSDPState->reg_v0 = (int) getSupportData();
             break;
         case GETPROCESSID:
-
-            BIOSDPState->reg_v0 = (int) getProcessID((int*)(BIOSDPState ->reg_a1));
+            BIOSDPState->reg_v0 = (int) getProcessID(
+                (int*)(BIOSDPState ->reg_a1));
             break;
         case GETCHILDREN:
-            BIOSDPState->reg_v0 = (int) getChildren((int*)(BIOSDPState ->reg_a1),(*((int*)(BIOSDPState ->reg_a1))));
-
             BIOSDPState->p_s.reg_v0 = (int) getProcessID(
                 (int*)(BIOSDPState ->p_s.reg_a1));
             break;
@@ -136,7 +126,6 @@ void syscallExcHandler(){
             BIOSDPState->p_s.reg_v0 = (int) getChildren(
                 (int*)(BIOSDPState ->p_s.reg_a1),
                 (*((int*)(BIOSDPState ->p_s.reg_a1))));
-
             break;
         
         default:        // > 11
