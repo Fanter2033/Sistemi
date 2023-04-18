@@ -4,7 +4,10 @@
 #include <pandos_const.h>
 #include <pandos_types.h>
 #include <umps3/umps/cp0.h>
+#include <umps3/umps/arch.h>
 #include <umps3/umps/libumps.h>
+
+#define ALDEV 42
 
 extern int processCount;
 extern int SBcount;
@@ -317,7 +320,7 @@ int findDevice(int* cmdAddr){
     */
 
     /* DEV_REG_ADDR ci restituisce l'indirizzo della linea IL_*, del devise 0-N_DEV_PER_IL*/
-    value = *(cmdAddr); //è la base
+    int value = *(cmdAddr); //è la base
     if (value < (memaddr)DEV_REG_START || value >=(memaddr) DEV_REG_END){
         return -1;
     }
@@ -389,7 +392,7 @@ int getChildren(int* children, int size){
         nsd_t* currentNs = getNamespace(currentProcess, NS_PID);
         struct pcb_t* iterator = NULL;
         
-        list_for_each_entry(iterator,firstChild,p_sib){
+        list_for_each_entry(iterator,&firstChild->p_sib,p_sib){
             if (currentNs == getNamespace(iterator, NS_PID)){   
                 if (size < valueToReturn)
                     *(children + valueToReturn) = iterator->p_pid;// finche riesco assegno alla cella contigua dell'array il pid del processo figlio 

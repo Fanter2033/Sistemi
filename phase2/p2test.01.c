@@ -865,7 +865,3 @@ void p11() {
     print("Error: p11 didn't die!\n");
     PANIC();
 }
-#endif
-void test(){
-
-}
