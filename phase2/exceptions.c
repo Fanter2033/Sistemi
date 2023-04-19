@@ -245,7 +245,7 @@ void Passeren(){
 void Verhogen(){
         int *semaddr = (*(int* ) (currentProcess->p_s.reg_a1)) ;
 
-        if(sem_value == 1){
+        if(semaddr == 1){
             BIOSDPState->pc_epc += WORDLEN;
             currentProcess->p_s = *BIOSDPState;
             insertBlocked(semaddr,currentProcess);
@@ -258,7 +258,7 @@ void Verhogen(){
             insertProcQ(readyQueue,removeBlocked(semaddr));
             schedule();  
         else
-            *sem_value++;
+            *semaddr++;
     }
 
 
