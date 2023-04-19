@@ -244,16 +244,21 @@ void Passeren(){
 
 void Verhogen(){
         int *semaddr = (*(int* ) (currentProcess->p_s.reg_a1)) ;
-        int sem_value = *semaddr ;
 
         if(sem_value == 1){
-            /* in teoria non deve succedere nulla */
+            BIOSDPState->pc_epc += WORDLEN;
+            currentProcess->p_s = *BIOSDPState;
+            insertBlocked(semaddr,currentProcess);
+            schedule();
         }
 
         else if (headBlocked(semaddr) != NULL)
-            removeBlocked(semaddr);
+            BIOSDPState->pc_epc += WORDLEN;
+            currentProcess->p_s = *BIOSDPState;
+            insertProcQ(readyQueue,removeBlocked(semaddr));
+            schedule();  
         else
-            sem_value++;
+            *sem_value++;
     }
 
 
