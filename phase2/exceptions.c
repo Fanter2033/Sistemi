@@ -74,6 +74,7 @@ void exceptionHandler(){
     else{   /* 4-7 o 9-12 */
         //controllo passa al Program Trap Exception Handling (pass up or die)
     }
+    
 }
 
 void syscallExcHandler(){

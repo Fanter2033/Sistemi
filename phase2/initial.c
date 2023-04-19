@@ -7,7 +7,7 @@
 #include <umps3/umps/libumps.h>
 #include <umps3/umps/cp0.h>
 
-#define ITSTOCK 
+#define NBIT(T,N) ((T & (1 << N)) >> N) 
 #define ALDEV 42  
 
 /*
@@ -40,7 +40,6 @@ extern void exceptionHandler();
 extern void schedule();
 
 int main(){
-    setSTATUS(ALLOFF);// va in un errore quando si chiama LSDT, controllare
 
     /* passup vector initialization */
     passUpCP0 = (passupvector_t*) PASSUPVECTOR;

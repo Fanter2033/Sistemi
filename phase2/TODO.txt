@@ -1,21 +1,30 @@
 TODO:
 - controllare una per una tutte le syscall
+
 - Ogni volta che un processo si blocca (-> viene chiamato lo scheduler), bisogna aggiornare il CPU (3.8)
+
+
+
+- trovare un filo logico e sequenziale migliore (il ritorno dopo un'eccezione, che sia SYS o interrupt, è troppo incasinata)
+- 3.6.2
+- 3.6.3
+- interrupt dei terminal
+pietro fre
+
+
+- pass UP or die (3.7)
+- SYSCALL > 11 (3.7.1)
+- 3.7.2
+- 3.7.3
+camilla e leonardo
+
+Da fare quando funge tutto:
 - creare un file unico con tutte le utilities comune a tutti i file, ovvero:
     - tutti i file extern
     - tutti gli include
     - funzioni ausiliare (P/V/findDevice ecc...)
 - divisione .h e .c
 - eliminare, se ancora ci sono, numeri assoluti (meglio inserirli come #define)
-- trovare un filo logico e sequenziale migliore (il ritorno dopo un'eccezione, che sia SYS o interrupt, è troppo incasinata)
-- 3.6.2
-- 3-6-3
-- interrupt dei terminali
-- pass UP or die (3.7)
-- SYSCALL > 11 (3.7.1)
-- 3.7.2
-- 3.7.3
-
 
 Da chiedere a Renzo:
 - senso di una V bloccante

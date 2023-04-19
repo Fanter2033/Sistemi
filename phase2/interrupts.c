@@ -10,7 +10,7 @@
 /* take T and N and return the n-th bit of T */
 #define ALDEV 42
 /* find nth bit of n */
-#define NBIT(T,N) ((T & (1 << N)) >> N) //non so se si può fare 
+#define NBIT(T,N) ((T & (1 << N)) >> N) 
 
 extern int findDevice(int* cmdAddr);
 extern int processCount;
@@ -135,7 +135,7 @@ void handleInterrupt(int line, int device){
 
     /* V on semaphore */
     int* sem = deviceSem[findDevice((int)devReg)];     //Da controllare se è giusto
-    pcb_t* waitingPCB = removeBlocked(sem);
+    pcb_t* waitingPCB = removeBlocked(sem); // SUS, vedi se va rimosso dopo usando la P
     if (waitingPCB != NULL){
         /* unlock PCB */
         V(sem);

@@ -10,6 +10,7 @@ extern int processCount;
 extern int SBcount; //SoftBlocked
 extern struct list_head* readyQueue;
 extern pcb_t* currentProcess;
+#define NBIT(T,N) ((T & (1 << N)) >> N) 
 
 #define MS(NUM) NUM*100 * (*((cpu_t *) TIMESCALEADDR))
 
@@ -29,7 +30,7 @@ void schedule(){
     currentProcess = removeProcQ(readyQueue);       /* readyQueue is not empty */
     setTIMER(MS(5));
     addokbuf("prima dell'inizio del primo processo, addios\n");
-    //ERRORE: pensa che non siamo in Kernel Mode, quindi tira un BP (BREAK exception)
+
     // 7.3.1
-    LDST(&currentProcess->p_s);
+    LDST(&(currentProcess->p_s));
 }
