@@ -32,3 +32,4 @@ Da chiedere a Renzo:
     avere un valore negativo se i semafori sono tutti bloccanti
 - caso in cui arriva un interrupt(interrupt handler) e alla 
     fine della risoluzione non c'è processo corrente nè ci sono processi in ready queue
+- come distinguare interrupt trasmitted o receive

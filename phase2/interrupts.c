@@ -35,7 +35,7 @@ void interruptHandler(){
     while (causeIP != 0){   /* loop to resolve all interrupts */
         if (NBIT(causeIP,line) == ON){     //INTERRUPT LINE ON
             switch (line){
-            case IL_CPUTIMER:
+            case IL_CPUTIMER: // 1
                 //3.6.2
                 break;
             
@@ -117,6 +117,13 @@ void nonTimerInterruptHandler(int interruptLine){
         case IL_TERMINAL:
             nBit = 0;
             deviceBitMap = CDEV_BITMAP_ADDR(TERMINT);
+
+            while(deviceBitMap !=0 ){
+                if(NBIT(deviceBitMap,nBit) == ON){
+                    handleInterrupt(interruptLine,nBit);
+    
+                }
+            }
             //capire come gestire questo degli interrupt
             break;
         
@@ -125,9 +132,28 @@ void nonTimerInterruptHandler(int interruptLine){
     }
 }
 
+void terminalInterrupt(int line, int device){
+    termreg_t* termReg = ((termreg_t *)DEV_REG_ADDR( line, device));
+
+    if(NBIT(){
+        unsigned int status = termReg->transm_status;
+        termReg->transm_command = 1 << 1 ; 
+
+    }
+    if(){
+        unsigned int status = termReg->recv_status;
+        termReg->recv_command = 1 << 1;
+    }
+    
+    
+}
+/
+
 void handleInterrupt(int line, int device){
+
     /* take device register from Address */
-    dtpreg_t* devReg = ((dtpreg_t *) DEV_REG_ADDR(line, device));
+    dtpreg_t* devReg = ((dtpreg_t *)DEV_REG_ADDR( line, device));
+    
     /* save off the status from device register */
     unsigned int status = devReg -> status;
     /* ACK the interrupt */
