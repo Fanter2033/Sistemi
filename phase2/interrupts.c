@@ -139,7 +139,7 @@ void resolveTerm(int line, int device){
     termreg_t* termReg = ((termreg_t *)DEV_REG_ADDR( line, device));
     int* sem;
 
-    if(){ //condizione : è attivo l'interrupt del trasmettitore
+    if(termReg->transm_status != BUSY && termReg->transm_status !=READY) {
         unsigned int status = termReg->transm_status;
         termReg->transm_command = ACK ; 
         sem = deviceSem[findDevice((int)termReg)];
@@ -152,7 +152,7 @@ void resolveTerm(int line, int device){
         }
     }
 
-    if(){ //condizione : è attivo l'interrupt del ricevitore
+    if(termReg->recv_status != BUSY && termReg->recv_status !=READY){
         unsigned int status = termReg->recv_status;
         termReg->recv_command = ACK;
         sem = deviceSem[findDevice((int)termReg)+OFFSETRWTERM];

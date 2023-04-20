@@ -300,7 +300,7 @@ int DO_IO(int *cmdAddr, int *cmdValues){
         dtpreg_t* regdevice = (dtpreg_t*)(cmdValues);
         cmdAddr = regdevice;
     }
-    else { //PER LEO: aggiustare l'IO su terminal, servono due semafori per device.
+    else {
         /*terminal*/
         termreg_t* regterm = (termreg_t*)(cmdValues);
         cmdAddr = regterm;
@@ -321,6 +321,9 @@ int DO_IO(int *cmdAddr, int *cmdValues){
     return 0;
 }
 
+
+/* NON FUNGE */
+//si possono modificare le etichette ai semafori ma segnalo così cambiamo anche il resto :)
 int findDevice(int* cmdAddr){
     /*
     All Lines Devices:
