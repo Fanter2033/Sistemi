@@ -234,12 +234,9 @@ void Passeren(){
         /* per ora lo inserisco in ready queue e chiamo lo scheduler */
         insertProcQ(readyQueue,removeBlocked(sem));
         schedule();  
-        
-        
     }
     else      /* there is NO semaphore -> no PCB */ 
         *sem-- ;
-
 }
 
 void Verhogen(){
@@ -303,7 +300,7 @@ int DO_IO(int *cmdAddr, int *cmdValues){
         dtpreg_t* regdevice = (dtpreg_t*)(cmdValues);
         cmdAddr = regdevice;
     }
-    else {
+    else { //PER LEO: aggiustare l'IO su terminal, servono due semafori per device.
         /*terminal*/
         termreg_t* regterm = (termreg_t*)(cmdValues);
         cmdAddr = regterm;
@@ -334,7 +331,7 @@ int findDevice(int* cmdAddr){
     10...17 -> Flash Devices
     18...25 -> Network Devices
     26...33 -> Printer Devices
-    34...41 -> Terminal Devices (W)
+    34...41 -> Terminal Devices
 
     DEV_IL_START = 3;
     */

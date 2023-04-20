@@ -9,6 +9,7 @@ TODO:
 - 3.6.2
 - 3.6.3
 - interrupt dei terminal
+    SUS su come distinguere un interrupt attivo
 pietro fre
 
 
