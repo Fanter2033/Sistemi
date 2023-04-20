@@ -11,7 +11,7 @@
 
 extern int processCount;
 extern int SBcount;
-extern struct list_head* readyQueue;
+extern struct list_head readyQueue;
 extern pcb_t* currentProcess;
 extern void schedule();
 extern void interruptHandler();
@@ -150,7 +150,7 @@ int createProcess(state_t *statep, support_t *supportp, nsd_t *ns){
         processCount++;
         /* The new process is set to be the 
         child of the current one and added to the readyQueue */
-        insertProcQ(readyQueue, newProc);
+        insertProcQ(&readyQueue, newProc);
         insertChild(currentProcess, newProc); 
         newProc->p_s = (*statep);
         newProc->p_supportStruct = supportp;
@@ -197,7 +197,7 @@ void terminateProcess(int pid){
             outBlocked(proc);
             SBcount--;
         } else { 
-            outProcQ(readyQueue, proc);
+            outProcQ(&readyQueue, proc);
         }
         while(!emptyChild(proc)){
             /* removeChild removes the first child and moves his first brother in its place:
@@ -232,7 +232,7 @@ void Passeren(){
 
         /* SCEGLIERE SE RIATTIVARE IL PROCESSO "LIBERATO" O METTERLO NELLA READY QUEUE */
         /* per ora lo inserisco in ready queue e chiamo lo scheduler */
-        insertProcQ(readyQueue,removeBlocked(sem));
+        insertProcQ(&readyQueue,removeBlocked(sem));
         schedule();  
         
         
@@ -255,7 +255,7 @@ void Verhogen(){
         else if (headBlocked(semaddr) != NULL)
             BIOSDPState->pc_epc += WORDLEN;
             currentProcess->p_s = *BIOSDPState;
-            insertProcQ(readyQueue,removeBlocked(semaddr));
+            insertProcQ(&readyQueue,removeBlocked(semaddr));
             schedule();  
         else
             *semaddr++;
@@ -428,7 +428,7 @@ pcb_t* findPCB_pid(int pid){
     pcb_t* PCBToReturn;
 
     /* search in ready queue */
-    PCBToReturn = findPCBfromQUEUE(pid, readyQueue);
+    PCBToReturn = findPCBfromQUEUE(pid, &readyQueue);
 
     /* search in semaphores */
     if(PCBToReturn != NULL){

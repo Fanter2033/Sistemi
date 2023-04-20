@@ -16,7 +16,7 @@ extern int findDevice(int* cmdAddr);
 extern int processCount;
 extern int SBcount;
 extern int deviceSem[ALDEV]; 
-extern struct list_head* readyQueue;
+extern struct list_head readyQueue;
 extern pcb_t* currentProcess;
 extern void schedule();
 extern state_t* BIOSDPState;
@@ -167,7 +167,7 @@ void handleInterrupt(int line, int device){
         V(sem);
         waitingPCB ->p_s.reg_v0 = status;
         /* insert in readyQueue */
-        insertProcQ(readyQueue,waitingPCB);
+        insertProcQ(&readyQueue,waitingPCB);
     }
     
 }
@@ -180,7 +180,7 @@ void P(int* sem){       //VEDERE SE SI PUÒ GENERALIZZARE LA P DELLE SYS
     }
     else if (headBlocked(sem)!=NULL){
         insertBlocked(sem,currentProcess);
-        insertProcQ(readyQueue,removeBlocked(sem));
+        insertProcQ(&readyQueue,removeBlocked(sem));
         SBcount++;
     }
     else{
@@ -203,7 +203,7 @@ void V(int* sem){       //VEDERE SE SI PUÒ GENERALIZZARE LA V DELLE SYS
     }
     else if (headBlocked(sem)!=NULL){
         insertBlocked(sem,currentProcess);
-        insertProcQ(readyQueue,removeBlocked(sem));
+        insertProcQ(&readyQueue,removeBlocked(sem));
         SBcount++;
     }
     else{
