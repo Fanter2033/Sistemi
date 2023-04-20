@@ -4,7 +4,9 @@
         "libumps.h": "c",
         "ns.h": "c",
         "cp0.h": "c",
-        "string.h": "c"
+        "string.h": "c",
+        "random": "c",
+        "*.tcc": "c"
     },
     "C_Cpp.errorSquiggles": "disabled"
 }

@@ -8,7 +8,7 @@
 #include <umps3/umps/cp0.h>
 
 #define NBIT(T,N) ((T & (1 << N)) >> N) 
-#define ALDEV 42  
+#define ALDEV 50  
 
 /*
     All Lines Devices:
@@ -19,8 +19,12 @@
     10...17 -> Flash Devices
     18...25 -> Network Devices
     26...33 -> Printer Devices
-    34...41 -> Terminal Devices
-    
+    //in 3.1, ultimo punto dice di avere un semaforo per ogni sub-device
+    //8 terminal -> 16 sub-device
+    34...49 -> Terminal Devices:
+        34 .. 41 -> Terminal - (W)
+        42 .. 49 -> Terminal - (R)
+
 */
 
 int processCount;   /*process started but not yet terminated */
