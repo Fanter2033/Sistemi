@@ -69,10 +69,10 @@ void exceptionHandler(){
         syscallExcHandler();
     }
     else if (excCode < 4){  //1-2-3
-        //controllo passa al TLB Exception Handler (pass up or die)
+        passUporDie(PGFAULTEXCEPT);
     }
     else{   /* 4-7 o 9-12 */
-        //controllo passa al Program Trap Exception Handling (pass up or die)
+        passUporDie(GENERALEXCEPT);
     }
     
 }
@@ -84,6 +84,7 @@ void syscallExcHandler(){
         setCAUSE((EXC_RI << CAUSE_EXCCODE_BIT));
 
         //call Program Trap Handler
+
     }
 
     else {
@@ -129,8 +130,8 @@ void syscallExcHandler(){
                 (*((int*)(BIOSDPState->reg_a1))));
             break;
         
-        default:        // > 11
-
+        default:  /* Syscall 11 and above */      
+            passUporDie(GENERALEXCEPT);
             break;
         }   
 
@@ -346,23 +347,23 @@ int findDevice(int* cmdAddr){
     }
     else if (value >= (memaddr) DEV_REG_ADDR(IL_DISK, 0) && value < (memaddr)DEV_REG_ADDR(IL_DISK, N_DEV_PER_IL)){
         /*disk device*/
-        return  (DEV_REG_ADDR(IL_DISK, N_DEV_PER_IL)-value)+2; 
+        return  ((128-(DEV_REG_ADDR(IL_DISK, N_DEV_PER_IL)-value))/16)+2; 
     }
     else if (value >= (memaddr)DEV_REG_ADDR(IL_FLASH, 0) && value < (memaddr) DEV_REG_ADDR(IL_FLASH, N_DEV_PER_IL)){
         /*flash device*/
-        return  (DEV_REG_ADDR(IL_FLASH, N_DEV_PER_IL)-value)+10;
+        return  ((128-(DEV_REG_ADDR(IL_FLASH, N_DEV_PER_IL)-value))/16)+10;
     }
     else if (value >= (memaddr)DEV_REG_ADDR(IL_ETHERNET, 0) && value < (memaddr) DEV_REG_ADDR(IL_ETHERNET, N_DEV_PER_IL)){
         /*network */
-        return  (DEV_REG_ADDR(IL_ETHERNET, N_DEV_PER_IL)-value)+18;
+        return  ((128-(DEV_REG_ADDR(IL_ETHERNET, N_DEV_PER_IL)-value))/16)+18;
     }
     else if (value >= (memaddr)DEV_REG_ADDR(IL_PRINTER, 0) && value < (memaddr) DEV_REG_ADDR(IL_PRINTER, N_DEV_PER_IL)){
         /*Printer*/
-        return (DEV_REG_ADDR(IL_PRINTER, N_DEV_PER_IL)-value)+26;
+        return ((128-(DEV_REG_ADDR(IL_PRINTER, N_DEV_PER_IL)-value))/16)+26;
     }
     else if (value >= (memaddr)DEV_REG_ADDR(IL_TERMINAL, 0) && value < (memaddr) DEV_REG_ADDR(IL_TERMINAL, N_DEV_PER_IL)){
         /*terminal*/
-        return (DEV_REG_ADDR(IL_TERMINAL, N_DEV_PER_IL)-value)+34;
+        return ((128-(DEV_REG_ADDR(IL_TERMINAL, N_DEV_PER_IL)-value))/8)+34;
     }
 }
 /*Restituisce il tempo di esecuzione (in microsecondi, quindi *1000?) del processo */
@@ -450,4 +451,18 @@ pcb_t* findPCBfromQUEUE(int pid, struct list_head* head ){
             return iterator;
     }
     return NULL;
+}
+
+void passUporDie(int indexValue){
+    if (currentProcess->p_supportStruct == NULL){
+        /* Die part */
+        terminateProcess((int*)(currentProcess ->p_s.reg_a1)); //? oppure currentProcess->p_pid?
+    }
+    else{
+        /*Passup part*/
+        currentProcess->p_supportStruct->sup_exceptState[indexValue]=(*(state_t*)(BIOSDATAPAGE));
+        LDCXT(&currentProcess->p_supportStruct->sup_exceptContext[indexValue].stackPtr,
+              &currentProcess->p_supportStruct->sup_exceptContext[indexValue].status, 
+              &currentProcess->p_supportStruct->sup_exceptContext[indexValue].pc);
+    }
 }
