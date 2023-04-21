@@ -23,6 +23,8 @@ extern struct list_head readyQueue;
 extern pcb_t* currentProcess;
 extern void schedule();
 extern state_t* BIOSDPState;
+extern void terminateProcess();
+extern void waitForClock();
 
 void P(int* sem);
 void V(int* sem);
@@ -58,6 +60,19 @@ void interruptHandler(){
     }
     /* return control to Current Process */
     LDST(BIOSDPState);
+}
+
+
+void PLTinterrupt(){
+    if(((  STATUS_TE_BIT & STATUS_TE) >> STATUS_TE_BIT) == 1){
+        
+        setTIMER(TIMESLICE); // sus  
+        currentProcess->p_s = *BIOSDPState;
+
+        insertProcQ(&readyQueue,currentProcess);
+
+        schedule(); 
+    }
 }
 
 void nonTimerInterruptHandler(int interruptLine){

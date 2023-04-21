@@ -54,7 +54,7 @@ void syscallExcHandler();
 int PID = 2;    /* 1 is the init process */
 
 
-void exceptionHandler(){
+void {
 
     /* use processor state in BIOS Data Page */
     BIOSDPState = ((state_t *) BIOSDATAPAGE);
