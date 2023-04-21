@@ -23,9 +23,15 @@ extern struct list_head readyQueue;
 extern pcb_t* currentProcess;
 extern void schedule();
 extern state_t* BIOSDPState;
+extern int pseudoClockSem;
 
 void P(int* sem);
-void V(int* sem);
+pcb_t* V(int* sem);
+void nonTimerInterruptHandler(int interruptLine);
+void resolveTerm(int line, int device);
+void resolveNonTerm(int line, int device);
+void ITInterrupt();
+void PLTinterrupt();
 
 
 void interruptHandler(){
@@ -39,12 +45,11 @@ void interruptHandler(){
         if (NBIT(causeIP,line) == ON){     //INTERRUPT LINE ON
             switch (line){
             case IL_CPUTIMER:
-                //3.6.2
-                /* si può rimuovere il semaforo del PLT, non serve teoricamente */
+                PLTinterrupt();
                 break;
             
             case IL_TIMER:
-                //3.6.3
+                ITInterrupt();
                 break;
 
             default:
@@ -68,7 +73,7 @@ void nonTimerInterruptHandler(int interruptLine){
     switch (interruptLine){
         case IL_DISK:
             nBit = 0; /* iterator on all bit of integer value */
-            deviceBitMap = CDEV_BITMAP_ADDR(IL_DISK);
+            deviceBitMap = (*((int *)CDEV_BITMAP_ADDR(IL_DISK))) & 0x00000008;
         
             while(deviceBitMap != 0){
                 if (NBIT(deviceBitMap,nBit) == ON){
@@ -81,7 +86,7 @@ void nonTimerInterruptHandler(int interruptLine){
 
         case IL_FLASH:
             nBit = 0;
-            deviceBitMap = CDEV_BITMAP_ADDR(IL_FLASH);
+            deviceBitMap = (*((int *)CDEV_BITMAP_ADDR(IL_FLASH))) & 0x00000008;
 
             while(deviceBitMap != 0){
                 if (NBIT(deviceBitMap,nBit) == ON){
@@ -94,7 +99,7 @@ void nonTimerInterruptHandler(int interruptLine){
         
         case IL_ETHERNET:
             nBit = 0;
-            deviceBitMap = CDEV_BITMAP_ADDR(IL_ETHERNET);
+            deviceBitMap = (*((int *)CDEV_BITMAP_ADDR(IL_ETHERNET))) & 0x00000008;
 
             while(deviceBitMap != 0){
                 if (NBIT(deviceBitMap,nBit) == ON){
@@ -107,11 +112,11 @@ void nonTimerInterruptHandler(int interruptLine){
         
         case IL_PRINTER:
             nBit = 0;
-            deviceBitMap = CDEV_BITMAP_ADDR(IL_PRINTER);
+            deviceBitMap =(*((int *)CDEV_BITMAP_ADDR(IL_PRINTER))) & 0x00000008;
 
             while(deviceBitMap != 0){
                 if (NBIT(deviceBitMap,nBit) == ON){
-                    handleInterrupt(interruptLine,nBit);
+                    resolveNonTerm(interruptLine,nBit);
                     deviceBitMap &= (0<<nBit);
                 }
                 nBit++;
@@ -120,7 +125,7 @@ void nonTimerInterruptHandler(int interruptLine){
         
         case IL_TERMINAL:
             nBit = 0;
-            deviceBitMap = CDEV_BITMAP_ADDR(TERMINT);
+            deviceBitMap = (*((int *)CDEV_BITMAP_ADDR(IL_TERMINAL))) & 0x00000008;
 
             while(deviceBitMap !=0 ){
                 if(NBIT(deviceBitMap,nBit) == ON){
@@ -148,7 +153,7 @@ void resolveTerm(int line, int device){
         if (unlockedPCB != NULL){
             unlockedPCB->p_s.reg_v0 = status;
             /* insert unlocked in ready queue*/
-            insertProcQ(&readyQueue,unlocked);
+            insertProcQ(&readyQueue,unlockedPCB);
         }
     }
 
@@ -161,7 +166,7 @@ void resolveTerm(int line, int device){
         if (unlockedPCB != NULL){
             unlockedPCB->p_s.reg_v0 = status;
             /* insert unlocked in ready queue*/
-            insertProcQ(&readyQueue,unlocked);
+            insertProcQ(&readyQueue,unlockedPCB);
         }
     }   
 }
@@ -212,14 +217,39 @@ void P(int* sem){
 /* V on device semaphore */
 pcb_t* V(int* sem){
 
+
     if (headBlocked(sem) == NULL){
-        *sem = 0;
+        (*sem) = 0;
         return NULL;
     }
     else{
         pcb_t* unlocked = removeBlocked(sem);
-        *sem++;
+        (*sem)++;
         SBcount--;
         return unlocked;
     }
+}
+
+void PLTinterrupt(){
+    if(((STATUS_TE_BIT & STATUS_TE) >> STATUS_TE_BIT)==1){
+        setTIMER(TIMESLICE);
+        currentProcess->p_s = *BIOSDPState;
+        insertProcQ(&readyQueue,currentProcess);
+        schedule();
+    }
+}
+
+void ITInterrupt(){
+    /* ack the interrupt */
+    LDIT(PSECOND);
+    /* unlock ALL processes */
+    while(headBlocked(&pseudoClockSem)!=NULL){
+        insertProcQ(&readyQueue,removeBlocked(&pseudoClockSem));
+    }   
+    /* set pseudoClockSem to 0 */
+    pseudoClockSem=0;
+    if (currentProcess==NULL){
+        schedule();
+    }
+    LDST(BIOSDPState);
 }

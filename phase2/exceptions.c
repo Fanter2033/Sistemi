@@ -60,7 +60,7 @@ void exceptionHandler(){
     BIOSDPState = ((state_t *) BIOSDATAPAGE);
 
 
-    unsigned int excCode = CAUSE_GET_EXCCODE(getCAUSE()); // from CPU or PCB ?? 
+    unsigned int excCode = CAUSE_GET_EXCCODE(BIOSDPState->cause); // from CPU or PCB ?? 
 
     if (excCode == 0){
         interruptHandler();
@@ -79,18 +79,18 @@ void exceptionHandler(){
 
 void syscallExcHandler(){
     /* check process if is in Kernel Mode */
-    if (((BIOSDPState->status & STATUS_KUc) >> 1) == 0 ){
+    if (((getSTATUS() & STATUS_KUc)) == 2 ){
         /* set ExcCode to RI */
-        setCAUSE((EXC_RI << CAUSE_EXCCODE_BIT));
+        BIOSDPState->cause = ((EXC_RI << CAUSE_EXCCODE_BIT));
 
-        //call Program Trap Handler
-
+        /*call Program Trap Handler*/
+        passUporDie(GENERALEXCEPT);
     }
 
     else {
         /* take value frome a0 register */
-        unsigned int a0 = (*((int *)(BIOSDPState->reg_a0)));
-        switch (a0) {
+
+        switch (BIOSDPState->reg_a0) {
         case CREATEPROCESS:
             BIOSDPState->reg_v0 = (int) createProcess(
                 (state_t*)(BIOSDPState->reg_a1),
@@ -108,8 +108,9 @@ void syscallExcHandler(){
             break;
         case DOIO:
             BIOSDPState->reg_v0 = (int) DO_IO(
-                (int*)(BIOSDPState->reg_a1),
-                (int*)(BIOSDPState->reg_a2));
+                (memaddr)(BIOSDPState->reg_a1),
+                (BIOSDPState->reg_a2));
+                schedule();
             break;
         case GETTIME:
             BIOSDPState->reg_v0 = (int) getTime();
@@ -129,13 +130,13 @@ void syscallExcHandler(){
                 (int*)(BIOSDPState->reg_a1),
                 (*((int*)(BIOSDPState->reg_a1))));
             break;
-        
-        default:  /* Syscall 11 and above */      
+        case 11: case 12: case 13: case 14: case 15: case 16: case 17: case 18: case 19: case 20:
             passUporDie(GENERALEXCEPT);
             break;
         }   
 
     /* se la syscall blocca il processo, allora è stato invocato lo scheduler, quindi non si arriverà qui */
+    BIOSDPState->pc_epc += WORDLEN;
     LDST(BIOSDPState);
     }
 }
@@ -210,6 +211,8 @@ void terminateProcess(int pid){
        }
        freePcb(proc);
     }
+    //temporaneo:
+    schedule();
 } 
 
 void Passeren(){
@@ -241,22 +244,23 @@ void Passeren(){
 }
 
 void Verhogen(){
-        int *semaddr = (*(int* ) (currentProcess->p_s.reg_a1)) ;
+        int *semaddr = (BIOSDPState->reg_a1) ;
 
-        if(semaddr == 1){
+        if(*semaddr == 1){
             BIOSDPState->pc_epc += WORDLEN;
             currentProcess->p_s = *BIOSDPState;
             insertBlocked(semaddr,currentProcess);
             schedule();
         }
 
-        else if (headBlocked(semaddr) != NULL)
+        else if (headBlocked(semaddr) != NULL){
             BIOSDPState->pc_epc += WORDLEN;
             currentProcess->p_s = *BIOSDPState;
             insertProcQ(&readyQueue,removeBlocked(semaddr));
             schedule();  
+        }
         else
-            *semaddr++;
+            (*semaddr)++;
     }
 
 
@@ -303,16 +307,20 @@ int DO_IO(int *cmdAddr, int *cmdValues){
     }
     else {
         /*terminal*/
-        termreg_t* regterm = (termreg_t*)(cmdValues);
-        cmdAddr = regterm;
+        int* status = cmdAddr;
+        int* cmd = cmdAddr + WORDLEN;
+        cmdAddr = cmdValues[1];
+        cmd = cmdValues[0];
+        //cmdAddr = regterm;
+
     }
 
     
     /*Block the process on that device */
-    int* sem = deviceSem+device;
+    int* sem = (&deviceSem + device);
     currentProcess->p_s = *BIOSDPState;
     P(sem);
-    schedule();
+    // temporaneo: schedule();
 /*  
     At the completion of the I-O operation the device register values 
     are copied back in the cmdValues array. The return value of this system 
@@ -341,8 +349,8 @@ int findDevice(int* cmdAddr){
     */
 
     /* DEV_REG_ADDR ci restituisce l'indirizzo della linea IL_*, del devise 0-N_DEV_PER_IL*/
-    int value = *(cmdAddr); //è la base
-    if (value < (memaddr)DEV_REG_START || value >=(memaddr) DEV_REG_END){
+    int value = cmdAddr; //è la base
+    if (value < (memaddr)DEV_REG_START || value >= (memaddr) DEV_REG_END){
         return -1;
     }
     else if (value >= (memaddr) DEV_REG_ADDR(IL_DISK, 0) && value < (memaddr)DEV_REG_ADDR(IL_DISK, N_DEV_PER_IL)){
@@ -456,7 +464,7 @@ pcb_t* findPCBfromQUEUE(int pid, struct list_head* head ){
 void passUporDie(int indexValue){
     if (currentProcess->p_supportStruct == NULL){
         /* Die part */
-        terminateProcess((int*)(currentProcess ->p_s.reg_a1)); //? oppure currentProcess->p_pid?
+        terminateProcess(0); //? oppure currentProcess->p_pid?
     }
     else{
         /*Passup part*/
