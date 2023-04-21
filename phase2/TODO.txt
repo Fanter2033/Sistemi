@@ -4,20 +4,16 @@ TODO:
 - Ogni volta che un processo si blocca (-> viene chiamato lo scheduler), bisogna aggiornare il CPU (3.8)
 
 
-
 - trovare un filo logico e sequenziale migliore (il ritorno dopo un'eccezione, che sia SYS o interrupt, è troppo incasinata)
-- 3.6.2
-- 3.6.3
-- interrupt dei terminal
-    SUS su come distinguere un interrupt attivo
-pietro fre
 
 
-- pass UP or die (3.7)
-- SYSCALL > 11 (3.7.1)
-- 3.7.2
-- 3.7.3
-camilla e leonardo
+LEGGETE PRIMA DI COMINCIARE A FARE DEBUG:
+1. ho cambiato qualche while con dei for perchè altrimenti dava problemi
+2. condizione dell'interrupt nei terminali VA RIVISTA, entra quando non dovrebbe
+3. c'è la parte commentata negli interrupt perchè ho cambiato il deviceSem e non avevo sbatti di cambiarlo ovunque
+4. Ho inserito la macro per la disabilitazione dell'interrupt ma TEORICAMENTE dovrebbe farlo da solo (con l'invio di ACK)
+5. ORA rimane loopato, bisogna capire il motivo
+
 
 Da fare quando funge tutto:
 - creare un file unico con tutte le utilities comune a tutti i file, ovvero:

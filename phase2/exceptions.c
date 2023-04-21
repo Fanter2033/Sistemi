@@ -6,6 +6,7 @@
 #include <umps3/umps/cp0.h>
 #include <umps3/umps/arch.h>
 #include <umps3/umps/libumps.h>
+#include <umps3/umps/types.h>
 
 #define ALDEV 42
 
@@ -54,7 +55,7 @@ void syscallExcHandler();
 int PID = 2;    /* 1 is the init process */
 
 
-void {
+void exceptionHandler(){
 
     /* use processor state in BIOS Data Page */
     BIOSDPState = ((state_t *) BIOSDATAPAGE);
@@ -307,12 +308,15 @@ int DO_IO(int *cmdAddr, int *cmdValues){
     }
     else {
         /*terminal*/
-        int* status = cmdAddr;
-        int* cmd = cmdAddr + WORDLEN;
-        cmdAddr = cmdValues[1];
-        cmd = cmdValues[0];
-        //cmdAddr = regterm;
-
+        termreg_t* terminal;
+        if ((unsigned int)cmdAddr % 16 == 4 ){
+            terminal = cmdAddr;
+            terminal->recv_command = cmdValues[1]; 
+        }
+        else {
+            terminal = (unsigned int)cmdAddr - 8;
+            terminal -> transm_command = cmdValues[1];
+        } 
     }
 
     
