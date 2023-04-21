@@ -48,9 +48,9 @@ int main(){
     /* passup vector initialization */
     passUpCP0 = (passupvector_t*) PASSUPVECTOR;
     passUpCP0->tlb_refill_handler = (memaddr) uTLB_RefillHandler;
-    passUpCP0->tlb_refill_stackPtr = (memaddr) 0x20001000;
+    passUpCP0->tlb_refill_stackPtr = (memaddr) KERNELSTACK;
     passUpCP0->exception_handler = (memaddr)  exceptionHandler;
-    passUpCP0->exception_stackPtr = (memaddr) 0x20001000;
+    passUpCP0->exception_stackPtr = (memaddr) KERNELSTACK;
 
 
     /* data structures initialization */
@@ -94,7 +94,7 @@ int main(){
     /* set SP to RAMTOP */
     RAMTOP(init->p_s.reg_sp);
 
-    addokbuf("kernel started\n");
+    //addokbuf("kernel started\n");
 
     /* call the scheduler */
     schedule();

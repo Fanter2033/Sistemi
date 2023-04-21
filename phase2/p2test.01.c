@@ -109,6 +109,7 @@ void p5sys(), p8root(), child1(), child2(), p8leaf1(), p8leaf2(), p8leaf3(),
 extern void p5gen();
 extern void p5mm();
 
+#if 0
 //TEMPORANEO
 
 char   okbuf[2048]; /* sequence of progress messages */
@@ -188,7 +189,7 @@ void addokbuf(char *strp) {
     mp--;
     termprint(tstrp, 0);
 }
-//
+#endif
 
 
 /* a procedure to print on terminal 0 */
@@ -227,7 +228,6 @@ void uTLB_RefillHandler() {
 /*                 p1 -- the root process                            */
 /*                                                                   */
 void test() {
-    addokbuf("inizio il test vero e proprio, ciao kernel");
     SYSCALL(VERHOGEN, (int)&sem_testsem, 0, 0); /* V(sem_testsem)   */
 
     print("p1 v(sem_testsem)\n");
