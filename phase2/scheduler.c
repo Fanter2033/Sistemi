@@ -18,7 +18,7 @@ void schedule(){
             HALT();                                 
         else if (processCount > 0 && SBcount > 0) {  /* case 2: waiting for some I/O interrupt */
             /* NO current Process */
-            currentProcess=NULL;
+            //currentProcess=NULL;
             /* interrupts enabled, PLT disabled */  
             setSTATUS( IECON | IMON & (~TEBITON) );
             WAIT();                           

@@ -164,7 +164,7 @@ void nonTimerInterruptHandler(int interruptLine){
 void resolveTerm(int line, int device){
     termreg_t* termReg = ((termreg_t *)DEV_REG_ADDR( line, device));
     int* sem;
-    #if 0
+    
     if(termReg->transm_status != BUSY) {
         unsigned int status = termReg->transm_status;
         termReg->transm_command = ACK ; 
@@ -177,7 +177,7 @@ void resolveTerm(int line, int device){
             insertProcQ(&readyQueue,unlockedPCB);
         }
     }
-    #endif
+    #if 0
     if(termReg->recv_status != BUSY){
         unsigned int status = termReg->recv_status;
         termReg->recv_command = ACK;
@@ -189,7 +189,8 @@ void resolveTerm(int line, int device){
             /* insert unlocked in ready queue*/
             insertProcQ(&readyQueue,unlockedPCB);
         }
-    }   
+    }  
+    #endif 
 }
 
 void resolveNonTerm(int line, int device){
@@ -226,10 +227,9 @@ void resolveNonTerm(int line, int device){
 
 /* P on device semaphore */
 void P(int* sem){
-    if(*sem > 0) WAIT();
     if (*sem <=0 ){
         insertBlocked(sem, currentProcess);
-        *sem--;
+        //*sem--; SUS 
         SBcount++;
     }
 

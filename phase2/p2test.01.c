@@ -195,7 +195,7 @@ void addokbuf(char *strp) {
 /* a procedure to print on terminal 0 */
 void print(char *msg) {
     char     *s       = msg;
-    devregtr *base    = (devregtr *)(TERM0ADDR);
+    devregtr *base    = (devregtr *)(TERM0ADDR+0x00000008);
     devregtr *command = base;
     devregtr  status;
 
