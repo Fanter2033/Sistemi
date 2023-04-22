@@ -8,7 +8,7 @@
 #include <umps3/umps/libumps.h>
 #include <umps3/umps/types.h>
 
-#define ALDEV 42
+#define ALDEV 50
 
 extern int processCount;
 extern int SBcount;
@@ -17,7 +17,7 @@ extern pcb_t* currentProcess;
 extern void schedule();
 extern void interruptHandler();
 extern int pseudoClockSem;
-extern int deviceSem;
+extern int deviceSem[ALDEV];
 extern int pseudoClockSem;
 extern void P(int* sem); //dichiarato in interrupts.c
 state_t* BIOSDPState;
@@ -292,16 +292,16 @@ int DO_IO(int *cmdAddr, int *cmdValues){
     */
 
     /*Find the device function*/
-    int device = findDevice(cmdAddr);
+    int indexDevice = findDevice(cmdAddr);
 
     /*Write command Values from command Address */
         /*devreg.dtp.command oppure 
         devreg.term.recv_command/devreg.term.transm_command*/
 
-    if (device<0){
+    if (indexDevice<0){
         return -1;
     }
-    else if (device < 34){
+    else if (indexDevice < 34){
         /*non-terminal*/
         dtpreg_t* regdevice = (dtpreg_t*)(cmdValues);
         cmdAddr = regdevice;
@@ -311,17 +311,17 @@ int DO_IO(int *cmdAddr, int *cmdValues){
         termreg_t* terminal;
         if ((unsigned int)cmdAddr % 16 == 4 ){
             terminal = cmdAddr;
-            terminal->recv_command = cmdValues[1]; 
+            terminal->recv_command = cmdValues[0]; 
         }
         else {
             terminal = (unsigned int)cmdAddr - 8;
-            terminal -> transm_command = cmdValues[1];
+            terminal -> transm_command = cmdValues[0];
         } 
     }
 
     
     /*Block the process on that device */
-    int* sem = (&deviceSem + device);
+    int* sem = (deviceSem+indexDevice);
     currentProcess->p_s = *BIOSDPState;
     P(sem);
     // temporaneo: schedule();

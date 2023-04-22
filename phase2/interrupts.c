@@ -164,11 +164,11 @@ void nonTimerInterruptHandler(int interruptLine){
 void resolveTerm(int line, int device){
     termreg_t* termReg = ((termreg_t *)DEV_REG_ADDR( line, device));
     int* sem;
-
+    #if 0
     if(termReg->transm_status != BUSY) {
         unsigned int status = termReg->transm_status;
         termReg->transm_command = ACK ; 
-        sem = deviceSem[findDevice((int)termReg)];
+        sem = deviceSem+findDevice((int)termReg);
         /* V on trasm (sub) device */
         pcb_t* unlockedPCB = V(sem);
         if (unlockedPCB != NULL){
@@ -177,11 +177,11 @@ void resolveTerm(int line, int device){
             insertProcQ(&readyQueue,unlockedPCB);
         }
     }
-
+    #endif
     if(termReg->recv_status != BUSY){
         unsigned int status = termReg->recv_status;
         termReg->recv_command = ACK;
-        sem = deviceSem[findDevice((int)termReg)];
+        sem = deviceSem+findDevice((int)termReg);
         /* V on recv (sub) device */
         pcb_t* unlockedPCB = V(sem);
         if (unlockedPCB != NULL){
@@ -190,7 +190,6 @@ void resolveTerm(int line, int device){
             insertProcQ(&readyQueue,unlockedPCB);
         }
     }   
-
 }
 
 void resolveNonTerm(int line, int device){
@@ -204,8 +203,8 @@ void resolveNonTerm(int line, int device){
     devReg->command = ACK;
 
     /* V on semaphore */
-    int* sem = deviceSem[findDevice((int)devReg)];     //Da controllare se è giusto
-    pcb_t* waitingPCB = removeBlocked(sem); // SUS, vedi se va rimosso dopo usando la P
+    int* sem = deviceSem+findDevice((int)devReg); // vedi operazione in DOIO, è identica
+    pcb_t* waitingPCB = headBlocked(sem);
     if (waitingPCB != NULL){
         /* unlock PCB */
         V(sem);
@@ -227,7 +226,7 @@ void resolveNonTerm(int line, int device){
 
 /* P on device semaphore */
 void P(int* sem){
-
+    if(*sem > 0) WAIT();
     if (*sem <=0 ){
         insertBlocked(sem, currentProcess);
         *sem--;
@@ -238,15 +237,13 @@ void P(int* sem){
 
 /* V on device semaphore */
 pcb_t* V(int* sem){
-
-
     if (headBlocked(sem) == NULL){
         (*sem) = 0;
         return NULL;
     }
     else{
         pcb_t* unlocked = removeBlocked(sem);
-        (*sem)++;
+        //(*sem)++; SUS -> diventando 1 non è più di sincronizzazione
         SBcount--;
         return unlocked;
     }
