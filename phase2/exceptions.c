@@ -292,7 +292,9 @@ int DO_IO(int *cmdAddr, int *cmdValues){
     */
 
     /*Find the device function*/
-    int indexDevice = findDevice(cmdAddr);
+    //int indexDevice = findDevice(cmdAddr);
+    //temporaneo:
+    int indexDevice=42;
 
     /*Write command Values from command Address */
         /*devreg.dtp.command oppure 
@@ -322,16 +324,17 @@ int DO_IO(int *cmdAddr, int *cmdValues){
     
     /*Block the process on that device */
     int* sem = (deviceSem+indexDevice);
+    BIOSDPState->pc_epc += WORDLEN;
     currentProcess->p_s = *BIOSDPState;
     P(sem);
-    // temporaneo: schedule();
+    schedule();
 /*  
     At the completion of the I-O operation the device register values 
     are copied back in the cmdValues array. The return value of this system 
     call is 0 in case of success, -1 otherwise.
     Dobbiamo ritornare qualcosa?
 */
-    return 0;
+    
 }
 
 

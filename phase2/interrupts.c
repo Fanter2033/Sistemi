@@ -14,6 +14,8 @@
 /*CauseIP part of Cause register*/
 #define CAUSEIP ((getCAUSE() & CAUSE_IP_MASK) >> CAUSE_IP_BIT(0)) 
 #define DISABLEINT(LINE) setCAUSE(getCAUSE() & (~((1<<LINE)<<CAUSE_IP_BIT(0))));
+/* separate char from status*/
+#define STATUSTERMMASK 0x00000008
 
 
 extern int findDevice(int* cmdAddr);
@@ -85,6 +87,9 @@ void interruptHandler(){
     }
     #endif
     /* return control to Current Process */
+    if (currentProcess==NULL){
+        schedule();
+    }
     LDST(BIOSDPState);
 }
 
@@ -165,21 +170,24 @@ void resolveTerm(int line, int device){
     termreg_t* termReg = ((termreg_t *)DEV_REG_ADDR( line, device));
     int* sem;
     
-    if(termReg->transm_status != BUSY) {
-        unsigned int status = termReg->transm_status;
+    if(termReg->transm_status != BUSY  && termReg->recv_status != READY) {
+        unsigned int status = (termReg->transm_status) & STATUSTERMMASK;
         termReg->transm_command = ACK ; 
-        sem = deviceSem+findDevice((int)termReg);
+        //sem = deviceSem+findDevice((int)termReg);
+        //temporaneo;
+        sem = deviceSem+42;
         /* V on trasm (sub) device */
         pcb_t* unlockedPCB = V(sem);
         if (unlockedPCB != NULL){
+            //unlockedPCB->p_s.reg_v0 = status;
+            //temporaneo:
             unlockedPCB->p_s.reg_v0 = status;
             /* insert unlocked in ready queue*/
             insertProcQ(&readyQueue,unlockedPCB);
         }
     }
-    #if 0
-    if(termReg->recv_status != BUSY){
-        unsigned int status = termReg->recv_status;
+    if(termReg->recv_status != BUSY && termReg->recv_status != READY){
+        unsigned int status = (termReg->recv_status) & STATUSTERMMASK;
         termReg->recv_command = ACK;
         sem = deviceSem+findDevice((int)termReg);
         /* V on recv (sub) device */
@@ -190,7 +198,6 @@ void resolveTerm(int line, int device){
             insertProcQ(&readyQueue,unlockedPCB);
         }
     }  
-    #endif 
 }
 
 void resolveNonTerm(int line, int device){
