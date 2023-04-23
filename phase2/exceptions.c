@@ -217,7 +217,7 @@ void terminateProcess(int pid){
 } 
 
 void Passeren(){
-    int* sem = ((int *)BIOSDPState->reg_a1);
+    int* sem = (int*)(BIOSDPState->reg_a1);
     if (*sem == 0){     /* blocked */
 
         /* increase PC to avoid loop on Syscall */
@@ -240,12 +240,13 @@ void Passeren(){
         insertProcQ(&readyQueue,removeBlocked(sem));
         schedule();  
     }
-    else      /* there is NO semaphore -> no PCB */ 
-        *sem-- ;
+    else{      /* there is NO semaphore -> no PCB */ 
+        (*sem) -= 1;
+    }
 }
 
 void Verhogen(){
-        int *semaddr = (BIOSDPState->reg_a1) ;
+        int* semaddr = (int*)(BIOSDPState->reg_a1) ;
 
         if(*semaddr == 1){
             BIOSDPState->pc_epc += WORDLEN;
@@ -261,7 +262,7 @@ void Verhogen(){
             schedule();  
         }
         else
-            (*semaddr)++;
+            (*semaddr) += 1;
     }
 
 

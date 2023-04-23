@@ -63,29 +63,6 @@ void interruptHandler(){
             DISABLEINT(line);
         }
     }
-
-    #if 0
-    while (CAUSEIP != 0){   /* loop to resolve all interrupts */
-        if (NBIT(CAUSEIP,line) == ON){     //INTERRUPT LINE ON
-            switch (line){
-            case IL_CPUTIMER:
-                PLTinterrupt();
-                break;
-            
-            case IL_TIMER:
-                ITInterrupt();
-                break;
-
-            default:
-                nonTimerInterruptHandler(line);
-                break;
-            }
-            /* n-th bit line resolved, so 1->0*/
-            DISABLEINT(line);
-        }
-        line++;  
-    }
-    #endif
     /* return control to Current Process */
     if (currentProcess==NULL){
         schedule();
@@ -170,7 +147,7 @@ void resolveTerm(int line, int device){
     termreg_t* termReg = ((termreg_t *)DEV_REG_ADDR( line, device));
     int* sem;
     
-    if(termReg->transm_status != BUSY  && termReg->recv_status != READY) {
+    if(termReg->transm_status != BUSY) {
         unsigned int status = (termReg->transm_status) & STATUSTERMMASK;
         termReg->transm_command = ACK ; 
         //sem = deviceSem+findDevice((int)termReg);
@@ -186,7 +163,7 @@ void resolveTerm(int line, int device){
             insertProcQ(&readyQueue,unlockedPCB);
         }
     }
-    if(termReg->recv_status != BUSY && termReg->recv_status != READY){
+    if(termReg->recv_status != BUSY){
         unsigned int status = (termReg->recv_status) & STATUSTERMMASK;
         termReg->recv_command = ACK;
         sem = deviceSem+findDevice((int)termReg);
@@ -257,7 +234,9 @@ pcb_t* V(int* sem){
 }
 
 void PLTinterrupt(){
-    if(((STATUS_TE_BIT & STATUS_TE) >> STATUS_TE_BIT)==1){
+    
+    if(((getSTATUS() & STATUS_TE) >> STATUS_TE_BIT) == ON){
+        DISABLEINT(1);
         setTIMER(TIMESLICE);
         currentProcess->p_s = *BIOSDPState;
         insertProcQ(&readyQueue,currentProcess);

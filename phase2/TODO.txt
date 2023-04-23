@@ -14,6 +14,7 @@ LEGGETE PRIMA DI COMINCIARE A FARE DEBUG:
 4. Ho inserito la macro per la disabilitazione dell'interrupt ma TEORICAMENTE dovrebbe farlo da solo (con l'invio di ACK)
 5. ORA rimane loopato, bisogna capire il motivo
 
+P.S. Problemi quando si accede al dato referenziato e lo si incrementa con ++;
 
 Da fare quando funge tutto:
 - creare un file unico con tutte le utilities comune a tutti i file, ovvero:
