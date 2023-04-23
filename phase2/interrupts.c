@@ -238,6 +238,7 @@ void PLTinterrupt(){
     if(((getSTATUS() & STATUS_TE) >> STATUS_TE_BIT) == ON){
         DISABLEINT(1);
         setTIMER(TIMESLICE);
+        updateCPUtime();
         currentProcess->p_s = *BIOSDPState;
         insertProcQ(&readyQueue,currentProcess);
         schedule();

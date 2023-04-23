@@ -23,6 +23,9 @@ extern void P(int* sem); //dichiarato in interrupts.c
 state_t* BIOSDPState;
 
 
+extern int processStartTime;
+int excTOD;
+
 //TODO list
 // prima di ogni schedule(), bisogna incrementare il TOD (sezione 3.8)
 
@@ -56,6 +59,7 @@ int PID = 2;    /* 1 is the init process */
 
 
 void exceptionHandler(){
+    STCK(excTOD);
 
     /* use processor state in BIOS Data Page */
     BIOSDPState = ((state_t *) BIOSDATAPAGE);
@@ -221,6 +225,7 @@ void Passeren(){
     if (*sem == 0){     /* blocked */
 
         /* increase PC to avoid loop on Syscall */
+        updateCPUtime();
         BIOSDPState->pc_epc += WORDLEN;
         currentProcess->p_s = *BIOSDPState;
         /* current process enters in block state */
@@ -230,8 +235,10 @@ void Passeren(){
     }
     else if (headBlocked(sem) != NULL){   /* more pcb in sem queue */ 
         /* increase PC to avoid loop on Syscall */
+        updateCPUtime();
         BIOSDPState->pc_epc += WORDLEN;
         currentProcess->p_s = *BIOSDPState;
+        
         /* current process enters in block state */
         insertBlocked(sem,currentProcess);  
 
@@ -384,7 +391,9 @@ int findDevice(int* cmdAddr){
 }
 /*Restituisce il tempo di esecuzione (in microsecondi, quindi *1000?) del processo */
 cpu_t getTime(){
-    return currentProcess->p_time; /* v0 inizializzata dopo*/
+    int currTOD;
+    STCK(currTOD);
+    return currentProcess->p_time + (currTOD - excTOD); /* v0 inizializzata dopo*/
 }
 
 void waitForClock(){
@@ -481,4 +490,10 @@ void passUporDie(int indexValue){
               &currentProcess->p_supportStruct->sup_exceptContext[indexValue].status, 
               &currentProcess->p_supportStruct->sup_exceptContext[indexValue].pc);
     }
+}
+
+void updateCPUtime(){
+    unsigned int tod;
+    STCK(tod);
+    currentProcess->p_time += tod - processStartTime;
 }

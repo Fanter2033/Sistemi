@@ -36,6 +36,8 @@ int deviceSem[ALDEV];
 
 int pseudoClockSem;
 
+int processStartTime;
+
 passupvector_t* passUpCP0;
 
 extern void test();

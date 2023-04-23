@@ -12,6 +12,8 @@ extern struct list_head readyQueue;
 extern pcb_t* currentProcess;
 #define NBIT(T,N) ((T & (1 << N)) >> N) 
 
+extern int processStartTime;
+
 void schedule(){
     if (emptyProcQ(&readyQueue)){
         if (processCount==0)                         /* case 1: nothing else to do */
@@ -28,7 +30,7 @@ void schedule(){
     }
     currentProcess = removeProcQ(&readyQueue);       /* readyQueue is not empty */
     setTIMER(TIMESLICE);
-
+    STCK(processStartTime);
     // 7.3.1
     LDST(&(currentProcess->p_s));
 }
