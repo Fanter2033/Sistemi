@@ -17,12 +17,12 @@
 /* separate char from status*/
 #define STATUSTERMMASK 0x00000008
 
+extern int readyPCB;
 
 extern int findDevice(int* cmdAddr);
 extern int processCount;
 extern int SBcount;
 extern int deviceSem[ALDEV]; 
-extern struct list_head readyQueue;
 extern struct list_head readyQueue;
 extern pcb_t* currentProcess;
 extern void schedule();
@@ -42,7 +42,6 @@ void PLTinterrupt();
 
 void interruptHandler(){
     /* line 0 not considered (NO multiprocessor) */
-    //int line = 1; 
     /* check goes from most significant bit to lower, so the priority is considered */
     for (int line=1; line<8;line++){
         if (NBIT(CAUSEIP,line) == ON){     //INTERRUPT LINE ON
@@ -161,6 +160,7 @@ void resolveTerm(int line, int device){
             unlockedPCB->p_s.reg_v0 = status;
             /* insert unlocked in ready queue*/
             insertProcQ(&readyQueue,unlockedPCB);
+            readyPCB++;
         }
     }
     if(termReg->recv_status != BUSY){
@@ -173,6 +173,7 @@ void resolveTerm(int line, int device){
             unlockedPCB->p_s.reg_v0 = status;
             /* insert unlocked in ready queue*/
             insertProcQ(&readyQueue,unlockedPCB);
+            readyPCB++;
         }
     }  
 }
@@ -196,6 +197,7 @@ void resolveNonTerm(int line, int device){
         waitingPCB ->p_s.reg_v0 = status;
         /* insert in readyQueue */
         insertProcQ(&readyQueue,waitingPCB);
+        readyPCB++;
     }
     
 }
@@ -237,10 +239,11 @@ void PLTinterrupt(){
     
     if(((getSTATUS() & STATUS_TE) >> STATUS_TE_BIT) == ON){
         DISABLEINT(1);
-        setTIMER(TIMESLICE);
+        setTIMER(1000000000);
         updateCPUtime();
-        currentProcess->p_s = *BIOSDPState;
+        currentProcess->p_s = (*BIOSDPState);
         insertProcQ(&readyQueue,currentProcess);
+        readyPCB++;
         schedule();
     }
 }
@@ -251,6 +254,7 @@ void ITInterrupt(){
     /* unlock ALL processes */
     while(headBlocked(&pseudoClockSem)!=NULL){
         insertProcQ(&readyQueue,removeBlocked(&pseudoClockSem));
+        readyPCB++;
     }   
     /* set pseudoClockSem to 0 */
     pseudoClockSem=0;

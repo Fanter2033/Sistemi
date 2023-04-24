@@ -6,6 +6,8 @@
 #include <umps3/umps/libumps.h>
 #include <umps3/umps/cp0.h>
 
+extern int readyPCB;
+
 extern int processCount;
 extern int SBcount; //SoftBlocked
 extern struct list_head readyQueue;
@@ -29,6 +31,7 @@ void schedule(){
             PANIC();     
     }
     currentProcess = removeProcQ(&readyQueue);       /* readyQueue is not empty */
+    readyPCB--;
     setTIMER(TIMESLICE);
     STCK(processStartTime);
     // 7.3.1

@@ -268,7 +268,9 @@ void test() {
     print("p2 was started\n");
 
     SYSCALL(VERHOGEN, (int)&sem_startp2, 0, 0); /* V(sem_startp2)   */
-    
+
+    print("zio peraaaa\n");
+
     SYSCALL(VERHOGEN, (int)&sem_endp2, 0, 0); /* V(sem_endp2) (blocking V!)     */
     
     /* make sure we really blocked */
@@ -387,7 +389,7 @@ void p2() {
     p1p2synch = 1; /* p1 will check this */
 
     SYSCALL(PASSEREN, (int)&sem_endp2, 0, 0); /* P(sem_endp2)    unblocking P ! */
-
+    
     SYSCALL(TERMPROCESS, 0, 0, 0); /* terminate p2 */
 
     /* just did a SYS2, so should not get to this point */
@@ -417,6 +419,7 @@ void p3() {
     /* now let's check to see if we're really charge for CPU
        time correctly */
     cpu_t1 = SYSCALL(GETTIME, 0, 0, 0);
+    print("INIZO GETTIME\n");
 
     for (i = 0; i < CLOCKLOOP; i++) {
         SYSCALL(CLOCKWAIT, 0, 0, 0);

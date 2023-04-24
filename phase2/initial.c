@@ -26,6 +26,7 @@
         42 .. 49 -> Terminal - (R)
 
 */
+int readyPCB;
 
 int processCount;   /*process started but not yet terminated */
 int SBcount;    /* soft-blocked count */
@@ -61,6 +62,7 @@ int main(){
     initNamespaces();
 
     /* nucleus variables initialization */
+    readyPCB=0;
     processCount=0;
     SBcount=0;
     mkEmptyProcQ(&readyQueue); 
@@ -76,6 +78,7 @@ int main(){
     /* First Process initialization */
     pcb_t* init = allocPcb();
     insertProcQ(&readyQueue,init);
+    readyPCB++;
     processCount++;
     init->p_time=0;
     init->p_supportStruct=NULL;

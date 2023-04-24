@@ -9,6 +9,7 @@
 #include <umps3/umps/types.h>
 
 #define ALDEV 50
+extern int readyPCB;
 
 extern int processCount;
 extern int SBcount;
@@ -44,8 +45,8 @@ pcb_t* findPCBfromQUEUE(int pid, struct list_head* head );
 pcb_t* findPCB_pid(int pid);
 int createProcess(state_t *statep, support_t *supportp, nsd_t *ns);
 void terminateProcess(int pid);
-void Passeren();
-void Verhogen();
+bool Passeren();
+bool Verhogen();
 int DO_IO(int *cmdAddr, int *cmdValues);
 cpu_t getTime();
 void waitForClock();
@@ -55,7 +56,7 @@ int getChildren(int *children, int size);
 
 void syscallExcHandler();
 
-int PID = 2;    /* 1 is the init process */
+int PID = 1;    /* 1 is the init process */
 
 
 void exceptionHandler(){
@@ -63,6 +64,7 @@ void exceptionHandler(){
 
     /* use processor state in BIOS Data Page */
     BIOSDPState = ((state_t *) BIOSDATAPAGE);
+    
 
 
     unsigned int excCode = CAUSE_GET_EXCCODE(BIOSDPState->cause); // from CPU or PCB ?? 
@@ -83,6 +85,9 @@ void exceptionHandler(){
 }
 
 void syscallExcHandler(){
+    /* increase PC to avoid loop on Syscall */
+    BIOSDPState->pc_epc +=WORDLEN;
+    
     /* check process if is in Kernel Mode */
     if (((getSTATUS() & STATUS_KUc)) == 2 ){
         /* set ExcCode to RI */
@@ -103,13 +108,19 @@ void syscallExcHandler(){
                 (nsd_t*)(BIOSDPState->reg_a3));
             break;
         case TERMPROCESS:
-            terminateProcess((int*)(currentProcess ->p_s.reg_a1));
+            terminateProcess(BIOSDPState->reg_a1);
             break;
         case PASSEREN:
-            Passeren();
+            if (Passeren(BIOSDPState->reg_a1)){
+                currentProcess->p_s = *BIOSDPState;
+                schedule();
+            }
             break;
         case VERHOGEN:
-            Verhogen();
+            if (Verhogen(BIOSDPState->reg_a1)){
+                currentProcess->p_s = *BIOSDPState;
+                schedule();
+            }
             break;
         case DOIO:
             BIOSDPState->reg_v0 = (int) DO_IO(
@@ -127,8 +138,7 @@ void syscallExcHandler(){
             BIOSDPState->reg_v0 = (int) getSupportData();
             break;
         case GETPROCESSID:
-            BIOSDPState->reg_v0 = (int) getProcessID(
-                (int*)(BIOSDPState->reg_a1));
+            BIOSDPState->reg_v0 = (int) getProcessID(BIOSDPState->reg_a1);
             break;
         case GETCHILDREN:
             BIOSDPState->reg_v0 = (int) getChildren(
@@ -141,7 +151,6 @@ void syscallExcHandler(){
         }   
 
     /* se la syscall blocca il processo, allora è stato invocato lo scheduler, quindi non si arriverà qui */
-    BIOSDPState->pc_epc += WORDLEN;
     LDST(BIOSDPState);
     }
 }
@@ -157,6 +166,7 @@ int createProcess(state_t *statep, support_t *supportp, nsd_t *ns){
         processCount++;
         /* The new process is set to be the 
         child of the current one and added to the readyQueue */
+        readyPCB++;
         insertProcQ(&readyQueue, newProc);
         insertChild(currentProcess, newProc); 
         newProc->p_s = (*statep);
@@ -205,6 +215,7 @@ void terminateProcess(int pid){
             SBcount--;
         } else { 
             outProcQ(&readyQueue, proc);
+            readyPCB--;
         }
         while(!emptyChild(proc)){
             /* removeChild removes the first child and moves his first brother in its place:
@@ -216,61 +227,69 @@ void terminateProcess(int pid){
        }
        freePcb(proc);
     }
-    //temporaneo:
-    schedule();
+    if (pid == 0){
+        //temporaneo:
+        schedule();
+    }
 } 
 
-void Passeren(){
-    int* sem = (int*)(BIOSDPState->reg_a1);
+bool Passeren(int* sem){
+
     if (*sem == 0){     /* blocked */
 
-        /* increase PC to avoid loop on Syscall */
+        
         updateCPUtime();
-        BIOSDPState->pc_epc += WORDLEN;
-        currentProcess->p_s = *BIOSDPState;
+
         /* current process enters in block state */
         insertBlocked(sem,currentProcess);  // output -> 0 o 1, come mi comporto ??
 
-        schedule(); /* suspend currentProcess */
+        return true;
     }
+   
     else if (headBlocked(sem) != NULL){   /* more pcb in sem queue */ 
-        /* increase PC to avoid loop on Syscall */
         updateCPUtime();
-        BIOSDPState->pc_epc += WORDLEN;
-        currentProcess->p_s = *BIOSDPState;
         
         /* current process enters in block state */
-        insertBlocked(sem,currentProcess);  
+        //insertBlocked(sem,currentProcess);  
 
         /* SCEGLIERE SE RIATTIVARE IL PROCESSO "LIBERATO" O METTERLO NELLA READY QUEUE */
         /* per ora lo inserisco in ready queue e chiamo lo scheduler */
         insertProcQ(&readyQueue,removeBlocked(sem));
-        schedule();  
+        insertProcQ(&readyQueue,currentProcess);
+        readyPCB++;
+        return true; 
+
     }
+    
     else{      /* there is NO semaphore -> no PCB */ 
-        (*sem) -= 1;
+        (*sem) = (*sem)-1;
+        return false;
     }
 }
 
-void Verhogen(){
-        int* semaddr = (int*)(BIOSDPState->reg_a1) ;
-
-        if(*semaddr == 1){
-            BIOSDPState->pc_epc += WORDLEN;
-            currentProcess->p_s = *BIOSDPState;
-            insertBlocked(semaddr,currentProcess);
-            schedule();
-        }
-
-        else if (headBlocked(semaddr) != NULL){
-            BIOSDPState->pc_epc += WORDLEN;
-            currentProcess->p_s = *BIOSDPState;
-            insertProcQ(&readyQueue,removeBlocked(semaddr));
-            schedule();  
-        }
-        else
-            (*semaddr) += 1;
+bool Verhogen(int* sem){
+    if((*sem) == 1){
+        updateCPUtime();
+        insertBlocked(sem,currentProcess);
+        return true;
     }
+
+    else if (headBlocked(sem) != NULL){
+        updateCPUtime(); /* dove posso metterlo?*/
+
+        
+        insertProcQ(&readyQueue,removeBlocked(sem));
+        insertProcQ(&readyQueue,currentProcess);
+        //insertBlocked(sem,currentProcess);
+        readyPCB++;
+        return true;
+    }
+    else{
+        (*sem) = (*sem) + 1;
+        return false;
+    }
+
+}
 
 
 /* Effettua un’operazione di I/O. */
@@ -332,10 +351,8 @@ int DO_IO(int *cmdAddr, int *cmdValues){
     
     /*Block the process on that device */
     int* sem = (deviceSem+indexDevice);
-    BIOSDPState->pc_epc += WORDLEN;
     currentProcess->p_s = *BIOSDPState;
     P(sem);
-    schedule();
 /*  
     At the completion of the I-O operation the device register values 
     are copied back in the cmdValues array. The return value of this system 
@@ -399,7 +416,6 @@ cpu_t getTime(){
 void waitForClock(){
     /* Always block on Psuedo-clock sem */
     /* increase PC to avoid loop on Syscall */
-    BIOSDPState->pc_epc += WORDLEN;
     currentProcess->p_s = *BIOSDPState;
     /* current process enters in block state */
     insertBlocked(&pseudoClockSem, currentProcess);
