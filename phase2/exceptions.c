@@ -133,6 +133,7 @@ void syscallExcHandler(){
             break;
         case CLOCKWAIT:
             waitForClock();
+            schedule();
             break;
         case GETSUPPORTPTR:
             BIOSDPState->reg_v0 = (int) getSupportData();
@@ -410,7 +411,7 @@ int findDevice(int* cmdAddr){
 cpu_t getTime(){
     int currTOD;
     STCK(currTOD);
-    return currentProcess->p_time + (currTOD - excTOD); /* v0 inizializzata dopo*/
+    return (currentProcess->p_time + (currTOD - excTOD)); /* v0 inizializzata dopo*/
 }
 
 void waitForClock(){
@@ -419,8 +420,7 @@ void waitForClock(){
     currentProcess->p_s = *BIOSDPState;
     /* current process enters in block state */
     insertBlocked(&pseudoClockSem, currentProcess);
-    schedule();
-    /* sezione 3.6.3 per le V dello pseudo clock semaphore, da gestire nell'interrupt handler*/
+    SBcount++;
 }
 
 support_t* getSupportData(){

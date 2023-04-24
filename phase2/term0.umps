@@ -6,5 +6,9 @@ p2 v's successfully
 p2 is OK
 p3 is started
 p3 - CLOCKWAIT OK
-INIZO GETTIME
-kernel panic()
+error: p3 - CPU time incorrectly maintained
+hp_p1 starts
+hp_p2 starts
+first incarnation of p4 starts
+p5 starts
+p

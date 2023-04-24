@@ -76,59 +76,51 @@ void nonTimerInterruptHandler(int interruptLine){
     int nBit=0;
 
     switch (interruptLine){
-        #if 0
-        case IL_DISK:
-            nBit = 0; /* iterator on all bit of integer value */
-            deviceBitMap = (*((int *)CDEV_BITMAP_ADDR(IL_DISK))) & 0x00000008;
         
-            while(deviceBitMap != 0){
-                if (NBIT(deviceBitMap,nBit) == ON){
-                    resolveNonTerm(interruptLine,nBit);
-                    deviceBitMap &= (0<<nBit);
+        case IL_DISK:
+            nBit = 0;
+            deviceBitMap = (int *)CDEV_BITMAP_ADDR(IL_DISK);
+            for (int bit=0;bit<8;bit++){
+                if (NBIT(*deviceBitMap,bit)==ON){
+                    resolveTerm(interruptLine,bit);
+                    *deviceBitMap &= (~(1<<bit));
                 }
-                nBit++;
             }
             break;
 
         case IL_FLASH:
             nBit = 0;
-            deviceBitMap = (*((int *)CDEV_BITMAP_ADDR(IL_FLASH))) & 0x00000008;
-
-            while(deviceBitMap != 0){
-                if (NBIT(deviceBitMap,nBit) == ON){
-                    resolveNonTerm(interruptLine,nBit);
-                    deviceBitMap &= (0<<nBit);
+            deviceBitMap = (int *)CDEV_BITMAP_ADDR(IL_FLASH);
+            for (int bit=0;bit<8;bit++){
+                if (NBIT(*deviceBitMap,bit)==ON){
+                    resolveTerm(interruptLine,bit);
+                    *deviceBitMap &= (~(1<<bit));
                 }
-                nBit++; 
             }
             break;
         
         case IL_ETHERNET:
             nBit = 0;
-            deviceBitMap = (*((int *)CDEV_BITMAP_ADDR(IL_ETHERNET))) & 0x00000008;
-
-            while(deviceBitMap != 0){
-                if (NBIT(deviceBitMap,nBit) == ON){
-                    resolveNonTerm(interruptLine,nBit);
-                    deviceBitMap &= (0<<nBit);
+            deviceBitMap = (int *)CDEV_BITMAP_ADDR(IL_ETHERNET);
+            for (int bit=0;bit<8;bit++){
+                if (NBIT(*deviceBitMap,bit)==ON){
+                    resolveTerm(interruptLine,bit);
+                    *deviceBitMap &= (~(1<<bit));
                 }
-                nBit++; 
             }
             break;
         
         case IL_PRINTER:
             nBit = 0;
-            deviceBitMap =(*((int *)CDEV_BITMAP_ADDR(IL_PRINTER))) & 0x00000008;
-
-            while(deviceBitMap != 0){
-                if (NBIT(deviceBitMap,nBit) == ON){
-                    resolveNonTerm(interruptLine,nBit);
-                    deviceBitMap &= (0<<nBit);
+            deviceBitMap = (int *)CDEV_BITMAP_ADDR(IL_PRINTER);
+            for (int bit=0;bit<8;bit++){
+                if (NBIT(*deviceBitMap,bit)==ON){
+                    resolveTerm(interruptLine,bit);
+                    *deviceBitMap &= (~(1<<bit));
                 }
-                nBit++;
             }
             break;
-        #endif
+        
         case IL_TERMINAL:
             nBit = 0;
             deviceBitMap = (int *)CDEV_BITMAP_ADDR(IL_TERMINAL);
@@ -254,6 +246,7 @@ void ITInterrupt(){
     /* unlock ALL processes */
     while(headBlocked(&pseudoClockSem)!=NULL){
         insertProcQ(&readyQueue,removeBlocked(&pseudoClockSem));
+        SBcount--;
         readyPCB++;
     }   
     /* set pseudoClockSem to 0 */

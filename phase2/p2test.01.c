@@ -419,7 +419,6 @@ void p3() {
     /* now let's check to see if we're really charge for CPU
        time correctly */
     cpu_t1 = SYSCALL(GETTIME, 0, 0, 0);
-    print("INIZO GETTIME\n");
 
     for (i = 0; i < CLOCKLOOP; i++) {
         SYSCALL(CLOCKWAIT, 0, 0, 0);
