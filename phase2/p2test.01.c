@@ -109,6 +109,9 @@ void p5sys(), p8root(), child1(), child2(), p8leaf1(), p8leaf2(), p8leaf3(),
 extern void p5gen();
 extern void p5mm();
 
+//debug var
+int tmp;
+
 /* a procedure to print on terminal 0 */
 void print(char *msg) {
     char     *s       = msg;
@@ -269,13 +272,11 @@ void test() {
 
     SYSCALL(VERHOGEN, (int)&sem_startp2, 0, 0); /* V(sem_startp2)   */
 
-    print("zio peraaaa\n");
-
     SYSCALL(VERHOGEN, (int)&sem_endp2, 0, 0); /* V(sem_endp2) (blocking V!)     */
     
     /* make sure we really blocked */
     if (p1p2synch == 0) {
-        print("error: p1/p2 synchronization bad\n");
+        print("error: p1/p2 synchronization bad\n"); //p2 non e' stato terminato
     }
     
     p3pid = SYSCALL(CREATEPROCESS, (int)&p3state, (int)NULL, (int)NULL); /* start p3     */
@@ -426,7 +427,9 @@ void p3() {
 
     cpu_t2 = SYSCALL(GETTIME, 0, 0, 0);
 
-    if (cpu_t2 - cpu_t1 < (MINCLOCKLOOP / (*((cpu_t *)TIMESCALEADDR)))) {
+    tmp = cpu_t2 - cpu_t1;
+
+    if (cpu_t2 - cpu_t1 < (MINCLOCKLOOP / (*((cpu_t *)TIMESCALEADDR)))) { // 3000 / 1 (1Mhz)
         print("error: p3 - CPU time incorrectly maintained\n");
     } else {
         print("p3 - CPU time correctly maintained\n");

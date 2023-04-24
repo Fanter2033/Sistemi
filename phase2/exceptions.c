@@ -61,7 +61,8 @@ int PID = 1;    /* 1 is the init process */
 
 void exceptionHandler(){
     STCK(excTOD);
-
+    if(currentProcess != NULL)
+        updateCPUtime();
     /* use processor state in BIOS Data Page */
     BIOSDPState = ((state_t *) BIOSDATAPAGE);
     
@@ -238,8 +239,7 @@ bool Passeren(int* sem){
 
     if (*sem == 0){     /* blocked */
 
-        
-        updateCPUtime();
+
 
         /* current process enters in block state */
         insertBlocked(sem,currentProcess);  // output -> 0 o 1, come mi comporto ??
@@ -248,7 +248,6 @@ bool Passeren(int* sem){
     }
    
     else if (headBlocked(sem) != NULL){   /* more pcb in sem queue */ 
-        updateCPUtime();
         
         /* current process enters in block state */
         //insertBlocked(sem,currentProcess);  
@@ -270,13 +269,11 @@ bool Passeren(int* sem){
 
 bool Verhogen(int* sem){
     if((*sem) == 1){
-        updateCPUtime();
         insertBlocked(sem,currentProcess);
         return true;
     }
 
     else if (headBlocked(sem) != NULL){
-        updateCPUtime(); /* dove posso metterlo?*/
 
         
         insertProcQ(&readyQueue,removeBlocked(sem));
@@ -409,19 +406,23 @@ int findDevice(int* cmdAddr){
 }
 /*Restituisce il tempo di esecuzione (in microsecondi, quindi *1000?) del processo */
 cpu_t getTime(){
-    int currTOD;
-    STCK(currTOD);
-    return (currentProcess->p_time + (currTOD - excTOD)); /* v0 inizializzata dopo*/
+    return (currentProcess->p_time); /* v0 inizializzata dopo*/
 }
 
 void waitForClock(){
+    if(pseudoClockSem == 0){
     /* Always block on Psuedo-clock sem */
     /* increase PC to avoid loop on Syscall */
     currentProcess->p_s = *BIOSDPState;
     /* current process enters in block state */
     insertBlocked(&pseudoClockSem, currentProcess);
     SBcount++;
+    }
+    else 
+        pseudoClockSem -- ;
+    
 }
+
 
 support_t* getSupportData(){
     return currentProcess->p_supportStruct;
@@ -511,5 +512,5 @@ void passUporDie(int indexValue){
 void updateCPUtime(){
     unsigned int tod;
     STCK(tod);
-    currentProcess->p_time += tod - processStartTime;
+    currentProcess->p_time += (cpu_t)(tod - processStartTime);
 }

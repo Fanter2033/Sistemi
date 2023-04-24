@@ -231,7 +231,7 @@ void PLTinterrupt(){
     
     if(((getSTATUS() & STATUS_TE) >> STATUS_TE_BIT) == ON){
         DISABLEINT(1);
-        setTIMER(1000000000);
+        setTIMER(50);
         updateCPUtime();
         currentProcess->p_s = (*BIOSDPState);
         insertProcQ(&readyQueue,currentProcess);
@@ -240,7 +240,7 @@ void PLTinterrupt(){
     }
 }
 
-void ITInterrupt(){
+void ITInterrupt(){ //ogni 100 millisecondi
     /* ack the interrupt */
     LDIT(PSECOND);
     /* unlock ALL processes */
@@ -250,7 +250,7 @@ void ITInterrupt(){
         readyPCB++;
     }   
     /* set pseudoClockSem to 0 */
-    pseudoClockSem=0;
+    pseudoClockSem = 0;
     if (currentProcess==NULL){
         schedule();
     }
