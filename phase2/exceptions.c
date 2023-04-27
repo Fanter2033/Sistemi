@@ -255,9 +255,9 @@ bool Passeren(int* sem){
         /* SCEGLIERE SE RIATTIVARE IL PROCESSO "LIBERATO" O METTERLO NELLA READY QUEUE */
         /* per ora lo inserisco in ready queue e chiamo lo scheduler */
         insertProcQ(&readyQueue,removeBlocked(sem));
-        insertProcQ(&readyQueue,currentProcess);
+        //insertProcQ(&readyQueue,currentProcess);
         readyPCB++;
-        return true; 
+        return false; 
 
     }
     
@@ -277,10 +277,10 @@ bool Verhogen(int* sem){
 
         
         insertProcQ(&readyQueue,removeBlocked(sem));
-        insertProcQ(&readyQueue,currentProcess);
+        //insertProcQ(&readyQueue,currentProcess);
         //insertBlocked(sem,currentProcess);
         readyPCB++;
-        return true;
+        return false;
     }
     else{
         (*sem) = (*sem) + 1;
