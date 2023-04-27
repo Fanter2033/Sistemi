@@ -24,10 +24,16 @@ Da fare quando funge tutto:
 - divisione .h e .c
 - eliminare, se ancora ci sono, numeri assoluti (meglio inserirli come #define)
 
-Da chiedere a Renzo:
-- senso di una V bloccante
-- perchè nella sezione 3.9 c'è scritto che un semaforo può 
-    avere un valore negativo se i semafori sono tutti bloccanti
-- caso in cui arriva un interrupt(interrupt handler) e alla 
-    fine della risoluzione non c'è processo corrente nè ci sono processi in ready queue
-- come distinguare interrupt trasmitted o receive
+
+//////////// 27_04_2023 ////////////////
+
+1) P e V devono bloccare il processo current sulla coda anche nel
+caso in cui ci sia la risorsa disponibile ma la coda del semaforo 
+non vuota
+
+2) Quando un processo esegue una systemcall non bloccante, si fa carico del tempo in cui e' stato dentro l'handler, dato che
+alla prossima gettime viene calcolato il tempo di inizio e quello di fine senza tenere contro di quello in cui si e' stoppato.
+
+3) c'e' un problema di rimozioni di processi, counter dei ready negativo !!
+
+
