@@ -34,6 +34,8 @@ non vuota
 2) Quando un processo esegue una systemcall non bloccante, si fa carico del tempo in cui e' stato dentro l'handler, dato che
 alla prossima gettime viene calcolato il tempo di inizio e quello di fine senza tenere contro di quello in cui si e' stoppato.
 
-3) c'e' un problema di rimozioni di processi, counter dei ready negativo !!
+Punto in cui si blocca:
+quando in p2 avviene il for con tutte le Verhogen e le Passeren, arriva al decimo semaforo( indirizzo: 0x2000.9408 ) e, durante la Verhogen,
+entra nel ramo headBlocked != NULL (semaforo non viene MAI usato prima porco zio pera)
 
 

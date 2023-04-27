@@ -17,6 +17,7 @@ extern pcb_t* currentProcess;
 extern int processStartTime;
 
 void schedule(){
+    currentProcess = NULL;
     if (emptyProcQ(&readyQueue)){
         if (processCount==0)                         /* case 1: nothing else to do */
             HALT();                                 

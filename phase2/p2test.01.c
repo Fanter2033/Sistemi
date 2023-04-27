@@ -356,6 +356,7 @@ void p2() {
     for (i = 0; i <= MAXSEM; i++) {
         s[i] = 0;
     }
+    
 
     /* V, then P, all of the semaphores in the s[] array */
     for (i = 0; i <= MAXSEM; i++) {
@@ -364,6 +365,7 @@ void p2() {
        if (s[i] != 0)
             print("error: p2 bad v/p pairs\n");
     }
+    
     print("p2 v's successfully\n");
 
     /* test of SYS6 */
