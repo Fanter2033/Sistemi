@@ -1,5 +1,8 @@
 #include "ash.h"
 
+HIDDEN DECLARE_HASHTABLE(semd_h,5);
+HIDDEN LIST_HEAD(semdFree_h);
+
 void removeEmptySemd(semd_t* s){
     if (emptyProcQ(&s->s_procq)){
         hash_del(&(s->s_link));

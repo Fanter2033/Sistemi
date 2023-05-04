@@ -1,5 +1,8 @@
 #include "pcb.h"
 
+/* pcbFree_h - pcb that are free or not used */
+HIDDEN LIST_HEAD(pcbFree_h);
+
 void initPcbs(){
     static pcb_t pcbFree_table[MAXPROC];
     for (int i=0;i<MAXPROC;i++)

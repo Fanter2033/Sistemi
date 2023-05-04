@@ -204,7 +204,8 @@ void terminateProcess(int pid){
         /*each pcb is freed in its recursive call*/
         freePcb(currentProcess);
     } else {  /* Kills the pointed process and progeny */
-        pcb_t* proc = findPCB_pid(pid);
+        pcb_t* proc = NULL;
+        //findPCB_pid(pid);
         outChild(proc);
         processCount--;
         /*the process is either blocked at a semaphore or on the ready queue*/
@@ -465,7 +466,7 @@ int getChildren(int* children, int size){
     }
     return valueToReturn;
 }
-
+#if 0
 
 pcb_t* findPCB_pid(int pid){
     pcb_t* PCBToReturn;
@@ -494,6 +495,7 @@ pcb_t* findPCBfromQUEUE(int pid, struct list_head* head ){
     }
     return NULL;
 }
+#endif
 
 void passUporDie(int indexValue){
     if (currentProcess->p_supportStruct == NULL){

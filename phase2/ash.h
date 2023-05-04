@@ -7,8 +7,7 @@
 #include "hashtable.h"
 #include "pcb.h"
 
-HIDDEN DECLARE_HASHTABLE(semd_h,5);
-HIDDEN struct list_head semdFree_h = LIST_HEAD_INIT(semdFree_h);
+
 
 /* Additional function : if the semaphore's list of proc. is empty remove it from the ash*/
 void removeEmptySemd(semd_t* s);

@@ -5,8 +5,7 @@
 #include "pandos_const.h"
 #include "list.h"
 
-/* pcbFree_h - pcb that are free or not used */
-HIDDEN struct list_head pcbFree_h = LIST_HEAD_INIT(pcbFree_h);
+
 
 /* init the pcbFree list */
 void initPcbs();

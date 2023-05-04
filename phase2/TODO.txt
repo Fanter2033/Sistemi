@@ -37,5 +37,3 @@ alla prossima gettime viene calcolato il tempo di inizio e quello di fine senza 
 Punto in cui si blocca:
 quando in p2 avviene il for con tutte le Verhogen e le Passeren, arriva al decimo semaforo( indirizzo: 0x2000.9408 ) e, durante la Verhogen,
 entra nel ramo headBlocked != NULL (semaforo non viene MAI usato prima porco zio pera)
-
-
