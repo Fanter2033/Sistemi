@@ -239,24 +239,14 @@ void terminateProcess(int pid){
 bool Passeren(int* sem){
 
     if (*sem == 0){     /* blocked */
-
-
-
         /* current process enters in block state */
-        insertBlocked(sem,currentProcess);  // output -> 0 o 1, come mi comporto ??
-
+        insertBlocked(sem,currentProcess);
         return true;
     }
    
-    else if (headBlocked(sem) != NULL){   /* more pcb in sem queue */ 
-        
-        /* current process enters in block state */
-        //insertBlocked(sem,currentProcess);  
-
-        /* SCEGLIERE SE RIATTIVARE IL PROCESSO "LIBERATO" O METTERLO NELLA READY QUEUE */
+    else if (headBlocked(sem) != NULL){   /* more pcb in sem queue */
         /* per ora lo inserisco in ready queue e chiamo lo scheduler */
         insertProcQ(&readyQueue,removeBlocked(sem));
-        //insertProcQ(&readyQueue,currentProcess);
         readyPCB++;
         return false; 
 
@@ -505,9 +495,9 @@ void passUporDie(int indexValue){
     else{
         /*Passup part*/
         currentProcess->p_supportStruct->sup_exceptState[indexValue]=(*(state_t*)(BIOSDATAPAGE));
-        LDCXT(&currentProcess->p_supportStruct->sup_exceptContext[indexValue].stackPtr,
-              &currentProcess->p_supportStruct->sup_exceptContext[indexValue].status, 
-              &currentProcess->p_supportStruct->sup_exceptContext[indexValue].pc);
+        LDCXT(currentProcess->p_supportStruct->sup_exceptContext[indexValue].stackPtr,
+              currentProcess->p_supportStruct->sup_exceptContext[indexValue].status, 
+              currentProcess->p_supportStruct->sup_exceptContext[indexValue].pc);
     }
 }
 

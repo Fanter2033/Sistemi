@@ -29,7 +29,7 @@ void schedule(){
             WAIT();                           
         }
         else if (processCount > 0 && SBcount == 0)  /* case 3: deadlock found */
-            PANIC();     
+            PANIC();
     }
     currentProcess = removeProcQ(&readyQueue);       /* readyQueue is not empty */
     readyPCB--;
