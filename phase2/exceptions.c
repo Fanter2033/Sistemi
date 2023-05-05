@@ -42,7 +42,7 @@ void *memcpy(void *dest, const void *src, unsigned long n)
 }
 
 pcb_t* findPCBfromQUEUE(int pid, struct list_head* head );
-pcb_t* findPCB_pid(int pid);
+pcb_t* findPCB_pid(int pid, struct list_head* queue);
 int createProcess(state_t *statep, support_t *supportp, nsd_t *ns);
 void terminateProcess(int pid);
 bool Passeren();
@@ -68,7 +68,7 @@ void exceptionHandler(){
     
 
 
-    unsigned int excCode = CAUSE_GET_EXCCODE(BIOSDPState->cause); // from CPU or PCB ?? 
+    unsigned int excCode = CAUSE_GET_EXCCODE(BIOSDPState->cause);
 
     if (excCode == 0){
         interruptHandler();
@@ -99,9 +99,10 @@ void syscallExcHandler(){
     }
 
     else {
-        /* take value frome a0 register */
+        /* switch on value in a0 register */
 
         switch (BIOSDPState->reg_a0) {
+
         case CREATEPROCESS:
             BIOSDPState->reg_v0 = (int) createProcess(
                 (state_t*)(BIOSDPState->reg_a1),
@@ -190,7 +191,7 @@ int createProcess(state_t *statep, support_t *supportp, nsd_t *ns){
 }
 
 void terminateProcess(int pid){
-    if(pid==0){  /* Kills the current process and progeny */
+    if( pid==0 || pid == currentProcess->p_pid ) {  /* Kills the current process and progeny */
         outChild(currentProcess);
         processCount--;
         while(!emptyChild(currentProcess)){
@@ -204,8 +205,7 @@ void terminateProcess(int pid){
         /*each pcb is freed in its recursive call*/
         freePcb(currentProcess);
     } else {  /* Kills the pointed process and progeny */
-        pcb_t* proc = NULL;
-        //findPCB_pid(pid);
+        pcb_t* proc = findPCB_pid(pid, (&readyQueue));
         outChild(proc);
         processCount--;
         /*the process is either blocked at a semaphore or on the ready queue*/
@@ -245,7 +245,6 @@ bool Passeren(int* sem){
     }
    
     else if (headBlocked(sem) != NULL){   /* more pcb in sem queue */
-        /* per ora lo inserisco in ready queue e chiamo lo scheduler */
         insertProcQ(&readyQueue,removeBlocked(sem));
         readyPCB++;
         return false; 
@@ -265,11 +264,7 @@ bool Verhogen(int* sem){
     }
 
     else if (headBlocked(sem) != NULL){
-
-        
         insertProcQ(&readyQueue,removeBlocked(sem));
-        //insertProcQ(&readyQueue,currentProcess);
-        //insertBlocked(sem,currentProcess);
         readyPCB++;
         return false;
     }
@@ -456,41 +451,11 @@ int getChildren(int* children, int size){
     }
     return valueToReturn;
 }
-#if 0
-
-pcb_t* findPCB_pid(int pid){
-    pcb_t* PCBToReturn;
-
-    /* search in ready queue */
-    PCBToReturn = findPCBfromQUEUE(pid, &readyQueue);
-
-    /* search in semaphores */
-    if(PCBToReturn != NULL){
-        int bkt=0;
-        struct semd_t* iterator;
-        hash_for_each(semd_h,bkt,iterator,s_link){
-            PCBToReturn = findPCBfromQUEUE(pid,&iterator->s_procq);
-            if (PCBToReturn != NULL)
-                return PCBToReturn;
-        }
-    }
-    return PCBToReturn;
-}
-
-pcb_t* findPCBfromQUEUE(int pid, struct list_head* head ){
-    pcb_t* iterator = NULL;
-    list_for_each_entry(iterator,head,p_list){
-        if (iterator->p_pid == pid)      // p is in the list
-            return iterator;
-    }
-    return NULL;
-}
-#endif
 
 void passUporDie(int indexValue){
     if (currentProcess->p_supportStruct == NULL){
         /* Die part */
-        terminateProcess(0); //? oppure currentProcess->p_pid?
+        terminateProcess(currentProcess->p_pid); 
     }
     else{
         /*Passup part*/

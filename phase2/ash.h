@@ -31,5 +31,7 @@ pcb_t* headBlocked(int *semAdd);
 /* initialize semdFree_h using an array of semd_t */
 void initASH();
 
+/* additional function for phase2 */
+pcb_t* findPCB_pid(int pid, struct list_head *queue);
 
 #endif

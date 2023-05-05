@@ -111,3 +111,13 @@ pcb_t* outChild(pcb_t* p){
     }
     return p;
 }
+
+
+pcb_t* findPCBfromQUEUE(int pid, struct list_head* head ){
+    pcb_t* iterator = NULL;
+    list_for_each_entry(iterator,head,p_list){
+        if (iterator->p_pid == pid)      // p is in the list
+            return iterator;
+    }
+    return NULL;
+}

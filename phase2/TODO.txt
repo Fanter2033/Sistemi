@@ -3,7 +3,6 @@ TODO:
 
 - Ogni volta che un processo si blocca (-> viene chiamato lo scheduler), bisogna aggiornare il CPU (3.8)
 
-
 - trovare un filo logico e sequenziale migliore (il ritorno dopo un'eccezione, che sia SYS o interrupt, è troppo incasinata)
 
 
@@ -37,3 +36,21 @@ alla prossima gettime viene calcolato il tempo di inizio e quello di fine senza 
 Punto in cui si blocca:
 quando in p2 avviene il for con tutte le Verhogen e le Passeren, arriva al decimo semaforo( indirizzo: 0x2000.9408 ) e, durante la Verhogen,
 entra nel ramo headBlocked != NULL (semaforo non viene MAI usato prima porco zio pera)
+
+
+////////////// 05_05_2023 ////////////////
+
+1) risolvere il problema nel print (angelo ha aggiunto un campo nel pcb per ritornare il valore dello status dopo l'esecuzione di doio)
+
+2) aggiustare il tempo
+
+3) rifare la find device
+
+Aggiustare questo e poi si va avanti nel test
+
+Problema attuale:
+In p6 c'è scritto che il processo dovrebbe terminare chiamando la syscall 1 ma in realtà continua e va a printare 
+Inoltre ci dovrebbe essere anche un altro problema perchè non è quel panic() (anche se comunque ci entrerebbe)
+per Debug: p6+0x38
+
+p6 -> entra DOIO nella print -> si ferma sul semaforo del terminal -> schedule -> LDST -> kernel panic

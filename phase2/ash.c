@@ -81,3 +81,22 @@ void initASH(){
         list_add(&(semd_table[i].s_freelink),&semdFree_h);
 }
 
+
+pcb_t* findPCB_pid(int pid, struct list_head *queue){
+    pcb_t* PCBToReturn;
+
+    /* search in ready queue */
+    PCBToReturn = findPCBfromQUEUE(pid, queue);
+
+    /* search in semaphores */
+    if(PCBToReturn != NULL){
+        int bkt=0;
+        struct semd_t* iterator;
+        hash_for_each(semd_h,bkt,iterator,s_link){
+            PCBToReturn = findPCBfromQUEUE(pid,&iterator->s_procq);
+            if (PCBToReturn != NULL)
+                return PCBToReturn;
+        }
+    }
+    return PCBToReturn;
+}

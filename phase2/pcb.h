@@ -53,4 +53,8 @@ pcb_t* removeChild(pcb_t* p);
 /* if (PCB pointed by p has a father) remove it else return NULL (this PCB could be in any position)*/
 pcb_t* outChild(pcb_t* p);
 
+/* additional function for phase2 */
+pcb_t* findPCBfromQUEUE(int pid, struct list_head* head );
+
+
 #endif //PCB_H
