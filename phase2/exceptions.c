@@ -21,10 +21,9 @@ extern int pseudoClockSem;
 extern int deviceSem[ALDEV];
 extern int pseudoClockSem;
 extern void P(int* sem); //dichiarato in interrupts.c
-state_t* BIOSDPState;
-
 
 extern int processStartTime;
+state_t* BIOSDPState;
 int excTOD;
 
 //TODO list
@@ -45,8 +44,8 @@ pcb_t* findPCBfromQUEUE(int pid, struct list_head* head );
 pcb_t* findPCB_pid(int pid, struct list_head* queue);
 int createProcess(state_t *statep, support_t *supportp, nsd_t *ns);
 void terminateProcess(int pid);
-bool Passeren();
-bool Verhogen();
+bool Passeren(int *sem);
+bool Verhogen(int *sem);
 int DO_IO(int *cmdAddr, int *cmdValues);
 cpu_t getTime();
 void waitForClock();
@@ -204,6 +203,8 @@ void terminateProcess(int pid){
         }
         /*each pcb is freed in its recursive call*/
         freePcb(currentProcess);
+        //temporaneo
+        schedule();
     } else {  /* Kills the pointed process and progeny */
         pcb_t* proc = findPCB_pid(pid, (&readyQueue));
         outChild(proc);
@@ -229,10 +230,6 @@ void terminateProcess(int pid){
             terminateProcess(firstChild->p_pid);
        }
        freePcb(proc);
-    }
-    if (pid == 0){
-        //temporaneo:
-        schedule();
     }
 } 
 
@@ -278,6 +275,8 @@ bool Verhogen(int* sem){
 
 /* Effettua un’operazione di I/O. */
 int DO_IO(int *cmdAddr, int *cmdValues){
+    currentProcess->valueAddr = cmdValues;
+    
     /* 
     I device si trovano a 
         0x1000.0054 - 0x1000.0063 Line 3, Device 0 (Device Register)
@@ -343,7 +342,7 @@ int DO_IO(int *cmdAddr, int *cmdValues){
     call is 0 in case of success, -1 otherwise.
     Dobbiamo ritornare qualcosa?
 */
-    
+    return 0;
 }
 
 
@@ -425,7 +424,7 @@ int getProcessID(int parent){
     nsd_t* ns = getNamespace(currentProcess, NS_PID);
     if (parent){
         if (ns==getNamespace(currentProcess->p_parent,NS_PID)){
-            return currentProcess->p_pid;
+            return currentProcess-> p_parent-> p_pid;
         }
         return 0;
     }

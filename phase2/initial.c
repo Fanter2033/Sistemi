@@ -39,7 +39,7 @@ int pseudoClockSem;
 
 int processStartTime;
 
-passupvector_t* passUpCP0;
+HIDDEN passupvector_t* passUpCP0;
 
 extern void test();
 extern void uTLB_RefillHandler();
@@ -83,6 +83,7 @@ int main(){
     init->p_time=0;
     init->p_supportStruct=NULL;
     init->p_pid = 1;
+    init->valueAddr = NULL;
     /* semADD and Process Tree fields initializated in allocPcb() */
     
     /* set the init' status: 

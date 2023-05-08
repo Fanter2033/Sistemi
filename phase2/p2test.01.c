@@ -109,8 +109,7 @@ void p5sys(), p8root(), child1(), child2(), p8leaf1(), p8leaf2(), p8leaf3(),
 extern void p5gen();
 extern void p5mm();
 
-//debug var
-int tmp;
+
 
 /* a procedure to print on terminal 0 */
 void print(char *msg) {
@@ -123,7 +122,7 @@ void print(char *msg) {
     while (*s != EOS) {
         devregtr value[2] = {PRINTCHR | (((devregtr)*s) << 8), 0 };
         status         = SYSCALL(DOIO, (int)command, (int)value, 0);
-        if (status != 0 /*|| (value[0] & TERMSTATMASK) != RECVD*/) {
+        if (status != 0 || (value[0] & TERMSTATMASK) != RECVD) {
             PANIC();
         }
         s++;
@@ -305,7 +304,7 @@ void test() {
     SYSCALL(CREATEPROCESS, (int)&p7state, (int)NULL, (int)NULL); /* start p7		*/
 
     p9pid = SYSCALL(CREATEPROCESS, (int)&p9state, (int)NULL, (int)NULL); /* start p7		*/
-
+    
     SYSCALL(PASSEREN, (int)&sem_endp5, 0, 0); /* P(sem_endp5)		*/
 
     print("p1 knows p5 ended\n");
@@ -428,8 +427,6 @@ void p3() {
     }
 
     cpu_t2 = SYSCALL(GETTIME, 0, 0, 0);
-
-    tmp = cpu_t2 - cpu_t1;
 
     if (cpu_t2 - cpu_t1 < (MINCLOCKLOOP / (*((cpu_t *)TIMESCALEADDR)))) { // 3000 / 1 (1Mhz)
         print("error: p3 - CPU time incorrectly maintained\n");
@@ -628,7 +625,7 @@ void p5b() {
 void p6() {
     print("p6 starts\n");
 
-    SYSCALL(1, 0, 0, 0); /* should cause termination because p6 has no
+    SYSCALL(11, 0, 0, 0); /* should cause termination because p6 has no
            trap vector */
 
     print("error: p6 alive after SYS9() with no trap vector\n");

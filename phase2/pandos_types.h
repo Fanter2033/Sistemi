@@ -76,6 +76,9 @@ typedef struct pcb_t {
     /* process id */
     int p_pid;
 
+    //temporaneo
+    unsigned int* valueAddr;
+
     /* Namespace list */
     nsd_t *namespaces[NS_TYPE_MAX];
 } pcb_t, *pcb_PTR;
