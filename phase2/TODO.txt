@@ -54,3 +54,22 @@ Inoltre ci dovrebbe essere anche un altro problema perchè non è quel panic() (
 per Debug: p6+0x38
 
 p6 -> entra DOIO nella print -> si ferma sul semaforo del terminal -> schedule -> LDST -> kernel panic
+
+
+///////////// 08_05_2023 ////////////////
+Problema del print risolto
+
+1) Aggiustare il tempo!!
+
+2) rifare find device (per riattivare tutti i dispositivi)
+
+3) controllare la Terminate!! (importante per continuare a testare in quanto ci sono processi che dovranno uccidere anche figli).
+    problemi che ha adesso:
+    - scheduler chiamato nella funzione (NON ha senso essendo ricorsivo!!!)
+    - controllo sui semafori da cambiare
+    - controllare le funzioni ausiliare in pcb.h 
+
+Problema attuale:
+non so il motivo ma si ferma dopo la clockwait nel p5b 
+(p5b clockwait -> mi blocco -> scheduler prende un processo-> PANIC)
+NON è il panic dello scheduler.
