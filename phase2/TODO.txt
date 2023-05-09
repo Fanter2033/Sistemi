@@ -73,3 +73,11 @@ Problema attuale:
 non so il motivo ma si ferma dopo la clockwait nel p5b 
 (p5b clockwait -> mi blocco -> scheduler prende un processo-> PANIC)
 NON è il panic dello scheduler.
+
+////////// 09_05_2023 //////////////////
+problema find-device e tempo risolti
+
+1) controllare Terminate, guarda sopra
+
+Problema attuale: stesso di sopra
+N.B. il PANIC avviene senza essere chiamato, dunque non è un panic in seguito ad un problema "previsto"

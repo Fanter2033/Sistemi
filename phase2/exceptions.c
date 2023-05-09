@@ -59,6 +59,7 @@ int PID = 1;    /* 1 is the init process */
 
 
 void exceptionHandler(){
+    if(currentProcess != NULL){updateCPUtime();}
     STCK(excTOD);
     /* use processor state in BIOS Data Page */
     BIOSDPState = ((state_t *) BIOSDATAPAGE);
@@ -80,7 +81,6 @@ void exceptionHandler(){
 }
 
 void syscallExcHandler(){
-    if(currentProcess != NULL){updateCPUtime();}
 
     /* increase PC to avoid loop on Syscall */
     BIOSDPState->pc_epc +=WORDLEN;
@@ -323,6 +323,7 @@ int DO_IO(int *cmdAddr, int *cmdValues){
             terminal->recv_command = cmdValues[0]; 
         }
         else {
+            /* cmdAddr is the trasm  address, so the terminal is cmdAddress - 8*/
             terminal = (unsigned int)cmdAddr - 8;
             terminal -> transm_command = cmdValues[0];
         } 

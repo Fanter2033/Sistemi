@@ -27,7 +27,6 @@ extern struct list_head readyQueue;
 extern pcb_t* currentProcess;
 extern void schedule();
 extern state_t* BIOSDPState;
-extern void terminateProcess();
 extern void waitForClock();
 extern int pseudoClockSem;
 
@@ -39,6 +38,7 @@ void resolveNonTerm(int line, int device);
 void ITInterrupt();
 void PLTinterrupt();
 
+int indexDevice;
 
 void interruptHandler(){
     /* line 0 not considered (NO multiprocessor) */
@@ -137,11 +137,13 @@ void nonTimerInterruptHandler(int interruptLine){
 void resolveTerm(int line, int device){
     termreg_t* termReg = (DEV_REG_ADDR( line, device));
     int* sem;
+    indexDevice=-1;     //reinitialize indexDevice
     
     if(termReg->transm_status != BUSY) {
         unsigned int status = (termReg->transm_status) & TERMSTATMASK;
         termReg->transm_command = ACK ; 
-        sem = deviceSem+findDevice((int)(termReg+0x00000008));
+        indexDevice = findDevice(((int)termReg)+8);
+        sem = deviceSem + indexDevice;
         /* V on trasm (sub) device */
         pcb_t* unlockedPCB = V(sem);
         if (unlockedPCB != NULL){
@@ -150,13 +152,13 @@ void resolveTerm(int line, int device){
             /* insert unlocked in ready queue*/
             insertProcQ(&readyQueue,unlockedPCB);
             readyPCB++;
-            
         }
     }
     if(termReg->recv_status != BUSY){
         unsigned int status = (termReg->recv_status)& TERMSTATMASK;
         termReg->recv_command = ACK;
-        sem = deviceSem+findDevice((int)(termReg));
+        indexDevice = findDevice((int)(termReg));
+        sem = deviceSem + indexDevice;
         /* V on recv (sub) device */
         pcb_t* unlockedPCB = V(sem);
         if (unlockedPCB != NULL){
@@ -232,7 +234,6 @@ void PLTinterrupt(){
     if(((getSTATUS() & STATUS_TE) >> STATUS_TE_BIT) == ON){
         DISABLEINT(1);
         setTIMER(50);
-        updateCPUtime();
         currentProcess->p_s = (*BIOSDPState);
         insertProcQ(&readyQueue,currentProcess);
         readyPCB++;
