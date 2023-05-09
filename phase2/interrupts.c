@@ -135,20 +135,16 @@ void nonTimerInterruptHandler(int interruptLine){
 }
 
 void resolveTerm(int line, int device){
-    termreg_t* termReg = ((termreg_t *)DEV_REG_ADDR( line, device));
+    termreg_t* termReg = (DEV_REG_ADDR( line, device));
     int* sem;
     
     if(termReg->transm_status != BUSY) {
         unsigned int status = (termReg->transm_status) & TERMSTATMASK;
         termReg->transm_command = ACK ; 
-        //sem = deviceSem+findDevice((int)termReg);
-        //temporaneo;
-        sem = deviceSem+42;
+        sem = deviceSem+findDevice((int)(termReg+0x00000008));
         /* V on trasm (sub) device */
         pcb_t* unlockedPCB = V(sem);
         if (unlockedPCB != NULL){
-            //unlockedPCB->p_s.reg_v0 = status;
-            //temporaneo:
             unlockedPCB->p_s.reg_v0 = 0;    //DOIO è andata a buon fine
             (unlockedPCB->valueAddr)[0] = status;
             /* insert unlocked in ready queue*/
@@ -160,7 +156,7 @@ void resolveTerm(int line, int device){
     if(termReg->recv_status != BUSY){
         unsigned int status = (termReg->recv_status)& TERMSTATMASK;
         termReg->recv_command = ACK;
-        sem = deviceSem+findDevice((int)termReg);
+        sem = deviceSem+findDevice((int)(termReg));
         /* V on recv (sub) device */
         pcb_t* unlockedPCB = V(sem);
         if (unlockedPCB != NULL){
@@ -176,7 +172,7 @@ void resolveTerm(int line, int device){
 void resolveNonTerm(int line, int device){
 
     /* take device register from Address */
-    dtpreg_t* devReg = ((dtpreg_t *)DEV_REG_ADDR( line, device));
+    dtpreg_t* devReg = (DEV_REG_ADDR( line, device));
     
     /* save off the status from device register */
     unsigned int status = devReg -> status;
@@ -189,7 +185,8 @@ void resolveNonTerm(int line, int device){
     if (waitingPCB != NULL){
         /* unlock PCB */
         V(sem);
-        waitingPCB ->p_s.reg_v0 = status;
+        waitingPCB ->p_s.reg_v0 = 0;
+        (waitingPCB->valueAddr)[0] = status;
         /* insert in readyQueue */
         insertProcQ(&readyQueue,waitingPCB);
         readyPCB++;

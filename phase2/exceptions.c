@@ -60,13 +60,8 @@ int PID = 1;    /* 1 is the init process */
 
 void exceptionHandler(){
     STCK(excTOD);
-    if(currentProcess != NULL)
-        updateCPUtime();
     /* use processor state in BIOS Data Page */
     BIOSDPState = ((state_t *) BIOSDATAPAGE);
-    
-
-
     unsigned int excCode = CAUSE_GET_EXCCODE(BIOSDPState->cause);
 
     if (excCode == 0){
@@ -85,6 +80,8 @@ void exceptionHandler(){
 }
 
 void syscallExcHandler(){
+    if(currentProcess != NULL){updateCPUtime();}
+
     /* increase PC to avoid loop on Syscall */
     BIOSDPState->pc_epc +=WORDLEN;
     
@@ -304,7 +301,7 @@ int DO_IO(int *cmdAddr, int *cmdValues){
     /*Find the device function*/
     //int indexDevice = findDevice(cmdAddr);
     //temporaneo:
-    int indexDevice=42;
+    int indexDevice=findDevice(cmdAddr);
 
     /*Write command Values from command Address */
         /*devreg.dtp.command oppure 
@@ -348,7 +345,7 @@ int DO_IO(int *cmdAddr, int *cmdValues){
 
 /* NON FUNGE */
 //si possono modificare le etichette ai semafori ma segnalo così cambiamo anche il resto :)
-int findDevice(int* cmdAddr){
+int findDevice(int *cmdAddr){
     /*
     All Lines Devices:
 
@@ -363,7 +360,7 @@ int findDevice(int* cmdAddr){
     DEV_IL_START = 3;
     */
 
-    /* DEV_REG_ADDR ci restituisce l'indirizzo della linea IL_*, del devise 0-N_DEV_PER_IL*/
+    /* DEV_REG_ADDR ci restituisce l'indirizzo della linea IL_*, del device 0-N_DEV_PER_IL*/
     int value = cmdAddr; //è la base
     if (value < (memaddr)DEV_REG_START || value >= (memaddr) DEV_REG_END){
         return -1;
