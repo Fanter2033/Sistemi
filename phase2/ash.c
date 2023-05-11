@@ -3,6 +3,7 @@
 HIDDEN DECLARE_HASHTABLE(semd_h,5);
 HIDDEN LIST_HEAD(semdFree_h);
 
+
 void removeEmptySemd(semd_t* s){
     if (emptyProcQ(&s->s_procq)){
         hash_del(&(s->s_link));
@@ -82,6 +83,7 @@ void initASH(){
 }
 
 
+
 pcb_t* findPCB_pid(int pid, struct list_head *queue){
     pcb_t* PCBToReturn;
 
@@ -89,7 +91,7 @@ pcb_t* findPCB_pid(int pid, struct list_head *queue){
     PCBToReturn = findPCBfromQUEUE(pid, queue);
 
     /* search in semaphores */
-    if(PCBToReturn != NULL){
+    if(PCBToReturn == NULL){
         int bkt=0;
         struct semd_t* iterator;
         hash_for_each(semd_h,bkt,iterator,s_link){

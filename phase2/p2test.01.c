@@ -592,7 +592,7 @@ void p5a() {
 void p5b() {
     cpu_t time1, time2;
 
-    SYSCALL(1, 0, 0, 0);
+    SYSCALL(11, 0, 0, 0);
     SYSCALL(PASSEREN, (int)&sem_endp4, 0, 0); /* P(sem_endp4)*/
 
     /* do some delay to be reasonably sure p4 and its offspring are dead */

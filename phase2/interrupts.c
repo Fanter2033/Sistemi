@@ -209,21 +209,22 @@ void resolveNonTerm(int line, int device){
 void P(int* sem){
     if (*sem <=0 ){
         insertBlocked(sem, currentProcess);
-        //*sem--; SUS 
         SBcount++;
     }
+    else
+        *sem = 0;
 
 }
 
 /* V on device semaphore */
 pcb_t* V(int* sem){
     if (headBlocked(sem) == NULL){
-        (*sem) = 0;
+        (*sem) = 1;
         return NULL;
     }
     else{
         pcb_t* unlocked = removeBlocked(sem);
-        //(*sem)++; SUS -> diventando 1 non è più di sincronizzazione
+    
         SBcount--;
         return unlocked;
     }

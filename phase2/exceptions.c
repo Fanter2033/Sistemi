@@ -107,6 +107,8 @@ void syscallExcHandler(){
             break;
         case TERMPROCESS:
             terminateProcess(BIOSDPState->reg_a1);
+            if (BIOSDPState->reg_a1 == 0 || BIOSDPState->reg_a1 == currentProcess -> p_pid)
+                schedule();
             break;
         case PASSEREN:
             if (Passeren(BIOSDPState->reg_a1)){
@@ -172,6 +174,8 @@ int createProcess(state_t *statep, support_t *supportp, nsd_t *ns){
         newProc->p_supportStruct = supportp;
         newProc->p_time = 0;
         newProc->p_semAdd = NULL;
+        newProc->p_pid = PID;
+
         //if ns==NULL, it fails and enters
         if(!addNamespace(newProc, ns)){ 
             /* This could be made by pointing the same structure as the father */
@@ -181,10 +185,46 @@ int createProcess(state_t *statep, support_t *supportp, nsd_t *ns){
                 addNamespace(newProc, tmpNs); 
             }
         }
-        newProc->p_pid = PID;
+        
     }
     return PID;
 }
+
+#if 0
+void killProcess(pcb_t *pcbToKill){
+
+    if (pcbToKill -> p_semAdd != NULL){
+        int *tmpSem = pcbToKill -> p_semAdd;
+        outBlocked(pcbToKill);
+        if(!((deviceSem <= tmpSem &&tmpSem <= deviceSem + ALDEV) || tmpSem == (&pseudoClockSem))){ 
+            if(headBlocked(tmpSem)==NULL)
+                *tmpSem = 1 - *tmpSem;
+        }
+        else{
+            SBcount--;
+        }
+    }
+
+    freePcb(pcbToKill);
+    processCount--;
+}
+
+void killTree(pcb_t *pcbToKill){
+
+    while(!emptyChild(pcbToKill)){
+        killTree(removeChild(pcbToKill));   //rimuovo un nodo dall'albero e richiamo ricorsivo su quel nodo.
+    }
+    killProcess(pcbToKill);
+}
+
+void terminateProcess(int pid){
+    pcb_t* toKill = (pid== 0 ||  pid == currentProcess->p_pid) ? currentProcess : findPCB_pid(pid,&readyQueue);
+    outChild(toKill);       //lo scollego dal padre
+    killTree(toKill);
+}
+#endif
+
+
 
 void terminateProcess(int pid){
     if( pid==0 || pid == currentProcess->p_pid ) {  /* Kills the current process and progeny */
@@ -200,24 +240,32 @@ void terminateProcess(int pid){
         }
         /*each pcb is freed in its recursive call*/
         freePcb(currentProcess);
-        //temporaneo
-        schedule();
+
     } else {  /* Kills the pointed process and progeny */
         pcb_t* proc = findPCB_pid(pid, (&readyQueue));
+        if(proc -> p_pid == 9) HALT();
         outChild(proc);
         processCount--;
         /*the process is either blocked at a semaphore or on the ready queue*/
+
         if(proc->p_semAdd!=NULL){
+            int *tmpSem = outBlocked(proc);
             /*the semaphore is incremente only if it is not a device one*/
-            if(!((deviceSem <= proc->p_semAdd && proc->p_semAdd <= deviceSem + ALDEV)||proc->p_semAdd ==pseudoClockSem)){ // *sizeof(int) dovrebbe essere implicito in C
-                *(proc->p_semAdd) +=1; // = 1
+            if(!((deviceSem <= tmpSem && tmpSem <= deviceSem + ALDEV)||tmpSem == &pseudoClockSem)){ // *sizeof(int) dovrebbe essere implicito in C
+                if (headBlocked(tmpSem)==0)
+                    *(tmpSem) =1 - *(tmpSem);
+                else{
+                    insertProcQ(&readyQueue,removeBlocked(tmpSem));
+                    
+                }
             }
-            outBlocked(proc);
+        
             SBcount--;
         } else { 
             outProcQ(&readyQueue, proc);
             readyPCB--;
         }
+
         while(!emptyChild(proc)){
             /* removeChild removes the first child and moves his first brother in its place:
             it only exits the loop when all the siblings have been removed */
@@ -229,6 +277,7 @@ void terminateProcess(int pid){
        freePcb(proc);
     }
 } 
+
 
 bool Passeren(int* sem){
 
@@ -453,6 +502,7 @@ void passUporDie(int indexValue){
     if (currentProcess->p_supportStruct == NULL){
         /* Die part */
         terminateProcess(currentProcess->p_pid); 
+        schedule();
     }
     else{
         /*Passup part*/
