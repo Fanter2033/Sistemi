@@ -240,27 +240,23 @@ void terminateProcess(int pid){
         }
         /*each pcb is freed in its recursive call*/
         freePcb(currentProcess);
-
+        currentProcess=NULL;
     } else {  /* Kills the pointed process and progeny */
         pcb_t* proc = findPCB_pid(pid, (&readyQueue));
-        if(proc -> p_pid == 9) HALT();
         outChild(proc);
         processCount--;
         /*the process is either blocked at a semaphore or on the ready queue*/
-
         if(proc->p_semAdd!=NULL){
             int *tmpSem = outBlocked(proc);
             /*the semaphore is incremente only if it is not a device one*/
             if(!((deviceSem <= tmpSem && tmpSem <= deviceSem + ALDEV)||tmpSem == &pseudoClockSem)){ // *sizeof(int) dovrebbe essere implicito in C
-                if (headBlocked(tmpSem)==0)
+                if (headBlocked(tmpSem)==0){
                     *(tmpSem) =1 - *(tmpSem);
-                else{
-                    insertProcQ(&readyQueue,removeBlocked(tmpSem));
-                    
-                }
+                }                
             }
-        
-            SBcount--;
+            else{
+                SBcount--;
+            }
         } else { 
             outProcQ(&readyQueue, proc);
             readyPCB--;
@@ -276,6 +272,10 @@ void terminateProcess(int pid){
        }
        freePcb(proc);
     }
+    if (currentProcess==NULL){
+        schedule();
+    }
+
 } 
 
 
@@ -501,8 +501,7 @@ int getChildren(int* children, int size){
 void passUporDie(int indexValue){
     if (currentProcess->p_supportStruct == NULL){
         /* Die part */
-        terminateProcess(currentProcess->p_pid); 
-        schedule();
+        terminateProcess(currentProcess->p_pid);
     }
     else{
         /*Passup part*/
