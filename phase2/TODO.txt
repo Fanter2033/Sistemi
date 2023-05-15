@@ -81,3 +81,12 @@ problema find-device e tempo risolti
 
 Problema attuale: stesso di sopra
 N.B. il PANIC avviene senza essere chiamato, dunque non è un panic in seguito ad un problema "previsto"
+
+////////// 15_05_2023 //////////////////
+Modifiche p2test.02 rispetto al .01:
+    - Eliminato il print "p4 is ok".
+        è stato inserita una print DOPO la V in p4
+        (quindi in teoria va stampato dopo rispetto a prima)
+
+Stesso problema di prima!!!
+    

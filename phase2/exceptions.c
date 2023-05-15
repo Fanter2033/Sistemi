@@ -249,10 +249,10 @@ void terminateProcess(int pid){
         if(proc->p_semAdd!=NULL){
             int *tmpSem = outBlocked(proc);
             /*the semaphore is incremente only if it is not a device one*/
-            if(!((deviceSem <= tmpSem && tmpSem <= deviceSem + ALDEV)||tmpSem == &pseudoClockSem)){ // *sizeof(int) dovrebbe essere implicito in C
+            if(!((deviceSem <= tmpSem && tmpSem <= deviceSem + ALDEV) || tmpSem == &pseudoClockSem)){ // *sizeof(int) dovrebbe essere implicito in C
                 if (headBlocked(tmpSem)==0){
-                    *(tmpSem) =1 - *(tmpSem);
-                }                
+                    *(tmpSem) = 1 - *(tmpSem);
+                }            
             }
             else{
                 SBcount--;
@@ -291,11 +291,10 @@ bool Passeren(int* sem){
         insertProcQ(&readyQueue,removeBlocked(sem));
         readyPCB++;
         return false; 
-
     }
     
     else{      /* there is NO semaphore -> no PCB */ 
-        (*sem) = (*sem)-1;
+        (*sem) = 0;
         return false;
     }
 }
@@ -305,17 +304,16 @@ bool Verhogen(int* sem){
         insertBlocked(sem,currentProcess);
         return true;
     }
-
+    
     else if (headBlocked(sem) != NULL){
         insertProcQ(&readyQueue,removeBlocked(sem));
         readyPCB++;
         return false;
     }
     else{
-        (*sem) = (*sem) + 1;
+        (*sem) = 1;
         return false;
     }
-
 }
 
 
@@ -369,12 +367,12 @@ int DO_IO(int *cmdAddr, int *cmdValues){
         termreg_t* terminal;
         if ((unsigned int)cmdAddr % 16 == 4 ){
             terminal = cmdAddr;
-            terminal->recv_command = cmdValues[0]; 
+            terminal->recv_command = cmdValues[1]; 
         }
         else {
             /* cmdAddr is the trasm  address, so the terminal is cmdAddress - 8*/
             terminal = (unsigned int)cmdAddr - 8;
-            terminal -> transm_command = cmdValues[0];
+            terminal -> transm_command = cmdValues[1];
         } 
     }
 
@@ -443,12 +441,12 @@ cpu_t getTime(){
 
 void waitForClock(){
     if(pseudoClockSem == 0){
-    /* Always block on Psuedo-clock sem */
-    /* increase PC to avoid loop on Syscall */
-    currentProcess->p_s = *BIOSDPState;
-    /* current process enters in block state */
-    insertBlocked(&pseudoClockSem, currentProcess);
-    SBcount++;
+        /* Always block on Psuedo-clock sem */
+        /* increase PC to avoid loop on Syscall */
+        currentProcess->p_s = *BIOSDPState;
+        /* current process enters in block state */
+        insertBlocked(&pseudoClockSem, currentProcess);
+        SBcount++;
     }
     else 
         pseudoClockSem -- ;

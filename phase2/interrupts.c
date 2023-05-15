@@ -139,7 +139,7 @@ void resolveTerm(int line, int device){
     int* sem;
     indexDevice=-1;     //reinitialize indexDevice
     
-    if(termReg->transm_status != BUSY) {
+    if( termReg->transm_status >1 && termReg->transm_status != BUSY ) {
         unsigned int status = (termReg->transm_status) & TERMSTATMASK;
         termReg->transm_command = ACK ; 
         indexDevice = findDevice(((int)termReg)+8);
@@ -154,7 +154,8 @@ void resolveTerm(int line, int device){
             readyPCB++;
         }
     }
-    if(termReg->recv_status != BUSY){
+    indexDevice = -1;
+    if(termReg->recv_status >1 && termReg->recv_status != BUSY){
         unsigned int status = (termReg->recv_status)& TERMSTATMASK;
         termReg->recv_command = ACK;
         indexDevice = findDevice((int)(termReg));
@@ -224,7 +225,6 @@ pcb_t* V(int* sem){
     }
     else{
         pcb_t* unlocked = removeBlocked(sem);
-    
         SBcount--;
         return unlocked;
     }
