@@ -8,7 +8,7 @@
 #include <umps3/umps/cp0.h>
 
 #define NBIT(T,N) ((T & (1 << N)) >> N) 
-#define ALDEV 50  
+#define DEVNUM 8
 
 /*
     All Lines Devices:
@@ -33,7 +33,14 @@ int SBcount;    /* soft-blocked count */
 pcb_t* currentProcess;  /* pcb that is in running state */
 struct list_head readyQueue;  /* queue of ready pcb */
 
-int deviceSem[ALDEV];      
+//int deviceSem[ALDEV]; 
+int intervalTimerSem;
+int diskSem[DEVNUM];
+int flashSem[DEVNUM];
+int netSem[DEVNUM];
+int printerSem[DEVNUM];
+int termSem[(DEVNUM*2)];
+
 
 int pseudoClockSem;
 
@@ -67,8 +74,13 @@ int main(){
     SBcount=0;
     mkEmptyProcQ(&readyQueue); 
     currentProcess=NULL;
-    for (int i=0;i<ALDEV;i++){
-        deviceSem[i]=0;
+    for (int i=0;i<8;i++){
+        //deviceSem[i]=0;
+        flashSem[i] = 0;
+        netSem[i] = 0;
+        printerSem[i] = 0;
+        termSem[i] = 0;
+        termSem[i+8] = 0;
     }
     pseudoClockSem=0;
 
@@ -99,8 +111,6 @@ int main(){
     
     /* set SP to RAMTOP */
     RAMTOP(init->p_s.reg_sp);
-
-    //addokbuf("kernel started\n");
 
     /* call the scheduler */
     schedule();

@@ -8,7 +8,8 @@
 #include <umps3/umps/arch.h>
 
 /* take T and N and return the n-th bit of T */
-#define ALDEV 50
+
+#define DEVNUM 8
 /* find nth bit of n */
 #define NBIT(T,N) ((T & (1 << N)) >> N) 
 /*CauseIP part of Cause register*/
@@ -19,16 +20,22 @@
 
 extern int readyPCB;
 
-extern int findDevice(int* cmdAddr);
+extern int findDevice(int line,int* cmdAddr);
 extern int processCount;
 extern int SBcount;
-extern int deviceSem[ALDEV]; 
+//extern int deviceSem[ALDEV]; 
 extern struct list_head readyQueue;
 extern pcb_t* currentProcess;
 extern void schedule();
 extern state_t* BIOSDPState;
 extern void waitForClock();
 extern int pseudoClockSem;
+
+extern int diskSem[DEVNUM];
+extern int flashSem[DEVNUM];
+extern int netSem[DEVNUM];
+extern int printerSem[DEVNUM];
+extern int termSem[(DEVNUM*2)];
 
 void P(int* sem);
 pcb_t* V(int* sem);
@@ -82,7 +89,7 @@ void nonTimerInterruptHandler(int interruptLine){
             deviceBitMap = (int *)CDEV_BITMAP_ADDR(IL_DISK);
             for (int bit=0;bit<8;bit++){
                 if (NBIT(*deviceBitMap,bit)==ON){
-                    resolveTerm(interruptLine,bit);
+                    resolveTerm(interruptLine,bit);     //NON TERM , da cambiare
                     *deviceBitMap &= (~(1<<bit));
                 }
             }
@@ -142,8 +149,8 @@ void resolveTerm(int line, int device){
     if( termReg->transm_status >1 && termReg->transm_status != BUSY ) {
         unsigned int status = (termReg->transm_status) & TERMSTATMASK;
         termReg->transm_command = ACK ; 
-        indexDevice = findDevice(((int)termReg)+8);
-        sem = deviceSem + indexDevice;
+        indexDevice = findDevice(IL_TERMINAL,((int)termReg)+8);
+        sem = termSem[1];
         /* V on trasm (sub) device */
         pcb_t* unlockedPCB = V(sem);
         if (unlockedPCB != NULL){
@@ -151,15 +158,14 @@ void resolveTerm(int line, int device){
             (unlockedPCB->valueAddr)[0] = status;
             /* insert unlocked in ready queue*/
             insertProcQ(&readyQueue,unlockedPCB);
-            readyPCB++;
         }
     }
     indexDevice = -1;
     if(termReg->recv_status >1 && termReg->recv_status != BUSY){
         unsigned int status = (termReg->recv_status)& TERMSTATMASK;
         termReg->recv_command = ACK;
-        indexDevice = findDevice((int)(termReg));
-        sem = deviceSem + indexDevice;
+        indexDevice = findDevice(IL_TERMINAL,((int)termReg));
+        sem = termSem[0];
         /* V on recv (sub) device */
         pcb_t* unlockedPCB = V(sem);
         if (unlockedPCB != NULL){
@@ -167,7 +173,6 @@ void resolveTerm(int line, int device){
             (unlockedPCB->valueAddr)[0] = status;
             /* insert unlocked in ready queue*/
             insertProcQ(&readyQueue,unlockedPCB);
-            readyPCB++;
         }
     }  
 }
@@ -183,7 +188,7 @@ void resolveNonTerm(int line, int device){
     devReg->command = ACK;
 
     /* V on semaphore */
-    int* sem = deviceSem+findDevice((int)devReg); // vedi operazione in DOIO, è identica
+    int* sem = printerSem[device]; // vedi operazione in DOIO, è identica
     pcb_t* waitingPCB = headBlocked(sem);
     if (waitingPCB != NULL){
         /* unlock PCB */
@@ -196,6 +201,7 @@ void resolveNonTerm(int line, int device){
     }
     
 }
+
 
 /*
     SUS valori del semaforo non utilizzati.Note:
