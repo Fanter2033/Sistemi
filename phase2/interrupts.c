@@ -132,7 +132,7 @@ void nonTimerInterruptHandler(int interruptLine){
             nBit = 0;
             deviceBitMap = (int *)CDEV_BITMAP_ADDR(IL_TERMINAL);
             for (int bit=0;bit<8;bit++){
-                if (NBIT(*deviceBitMap,bit)==ON){
+                if (NBIT(*deviceBitMap,bit) == ON){
                     resolveTerm(interruptLine,bit);
                     *deviceBitMap &= (~(1<<bit));
                 }
@@ -146,11 +146,11 @@ void resolveTerm(int line, int device){
     int* sem;
     indexDevice=-1;     //reinitialize indexDevice
     
-    if( termReg->transm_status >1 && termReg->transm_status != BUSY ) {
+    if( termReg->transm_status > 1 && termReg->transm_status != BUSY ) {
         unsigned int status = (termReg->transm_status) & TERMSTATMASK;
         termReg->transm_command = ACK ; 
         indexDevice = findDevice(IL_TERMINAL,((int)termReg)+8);
-        sem = termSem[1];
+        sem = &(termSem[indexDevice]);
         /* V on trasm (sub) device */
         pcb_t* unlockedPCB = V(sem);
         if (unlockedPCB != NULL){
@@ -165,7 +165,7 @@ void resolveTerm(int line, int device){
         unsigned int status = (termReg->recv_status)& TERMSTATMASK;
         termReg->recv_command = ACK;
         indexDevice = findDevice(IL_TERMINAL,((int)termReg));
-        sem = termSem[0];
+        sem = (&termSem[indexDevice]);
         /* V on recv (sub) device */
         pcb_t* unlockedPCB = V(sem);
         if (unlockedPCB != NULL){
@@ -203,18 +203,10 @@ void resolveNonTerm(int line, int device){
 }
 
 
-/*
-    SUS valori del semaforo non utilizzati.Note:
-    1. in P ha senso chiamare currentProcess (P chiamata in DOIO dal kernel).
-    2. in V non ha senso chiamare current (sarebbe totalmente un altro processo, qui siamo a livello kernel)
-    3. P sempre bloccante 3 non decrementa mai
-    4. V non è mai bloccante !!! (sus ma ha anche molto senso per i device (sincronizzazione))
-    5. valore in questo caso usato come conta!!!
-*/
-
 /* P on device semaphore */
 void P(int* sem){
-    if (*sem <=0 ){
+
+    if ((*sem) <= 0 ){
         insertBlocked(sem, currentProcess);
         SBcount++;
     }
@@ -243,7 +235,6 @@ void PLTinterrupt(){
         setTIMER(50);
         currentProcess->p_s = (*BIOSDPState);
         insertProcQ(&readyQueue,currentProcess);
-        readyPCB++;
         schedule();
     }
 }
@@ -255,7 +246,6 @@ void ITInterrupt(){ //ogni 100 millisecondi
     while(headBlocked(&pseudoClockSem)!=NULL){
         insertProcQ(&readyQueue,removeBlocked(&pseudoClockSem));
         SBcount--;
-        readyPCB++;
     }   
     /* set pseudoClockSem to 0 */
     pseudoClockSem = 0;

@@ -401,61 +401,62 @@ int DO_IO(int *cmdAddr, int *cmdValues){
 }
 #endif
 
+
 int DO_IO(int *cmdAddr, int *cmdValues){
     currentProcess->valueAddr = cmdValues;
+
     int line = findDevType(cmdAddr);
     int device = findDevice(line,cmdAddr);
+    if (device < 0)  PANIC();
     
     int* sem = NULL;
 
     switch (line){
         case IL_DISK:
-            sem = diskSem[device];
+            sem = &(diskSem[device]);
             cmdAddr  = (dtpreg_t*)(cmdValues);
             break;
         case IL_FLASH:
-            sem = flashSem[device];
+            sem = &(flashSem[device]);
             cmdAddr  = (dtpreg_t*)(cmdValues);
             break;
         case IL_ETHERNET:
-            sem = netSem[device];
+            sem = &(netSem[device]);
             cmdAddr  = (dtpreg_t*)(cmdValues);
             break;
         case IL_PRINTER:
-            sem = printerSem[device];
+            sem = &(printerSem[device]);
             cmdAddr  = (dtpreg_t*)(cmdValues);
             break;
 
         case IL_TERMINAL:
-            sem = termSem[1];
+            sem = &(termSem[device]);
 
             termreg_t* terminal;
-            if (device % 2 == 0){
+            if ((memaddr)cmdAddr % 16 == 4){
                 terminal = cmdAddr;
                 terminal->recv_command = cmdValues[1]; 
             }
             else {
                 /* cmdAddr is the trasm  address, so the terminal is cmdAddress - 8*/
-                terminal = (unsigned int)cmdAddr - 8;
+                terminal = (memaddr)cmdAddr - 8;
                 terminal -> transm_command = cmdValues[1];
             } 
+
+            P (sem);
             break;
     }
 
     currentProcess->p_s = *BIOSDPState;
-    P(sem);
     return 0;
 }
 
 int findDevType(int *cmdAddr){
-    #if 0
     if (cmdAddr < (memaddr)DEV_REG_START || cmdAddr >= (memaddr) DEV_REG_END){
             return -1;
     }
-    else{
-    #endif
-
-        return (((int)cmdAddr - DEV_REG_START) / 0x80) + 3;
+    else
+        return (((int)cmdAddr - (int)DEV_REG_START) / 0x80) + 3;
     
     #if 0
     }
@@ -485,8 +486,8 @@ int findDevType(int *cmdAddr){
 }
 
 int findDevice(int line,int* cmdAddr){
-    
-    return line == IL_TERMINAL ? (int)(cmdAddr - DEV_REG_ADDR(line,0)) / 8 : (int)(cmdAddr - DEV_REG_ADDR(line,0)) / 16; 
+
+    return line == IL_TERMINAL ? (int)((int)cmdAddr - (int)DEV_REG_ADDR(line,0)) / 8 : (int)((int)cmdAddr - (int)DEV_REG_ADDR(line,0)) / 16; 
 }
 
 #if 0
