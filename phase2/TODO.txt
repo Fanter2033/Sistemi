@@ -90,3 +90,23 @@ Modifiche p2test.02 rispetto al .01:
 
 Stesso problema di prima!!!
     
+///////// 01_06_2023 //////////////
+
+Cosa succede:
+
+parte p8root -> print -> crea i due processi -> Passeren e insertblocked
+
+entra nello scheduler, che sceglie un processo
+
+child1 inizia -> entra nel print -> prende mutex -> DOIO (c) -> P()-> si ferma aspettando che il terminal abbia finito
+
+entra nello scheduler, che sceglie un processo
+Il processo non fa in tempo a partire che arrivano già gli interrupt
+Finito di gestire l'interrupt, torna il controllo al processo che era stato interrotto, ovvero child2
+
+child2: si inserisce nella coda del terminal (mutex)
+
+entra nello scheduler che sceglie un processo:
+p8 ROOT che riparte da DOPO la syscall (DOVREBBE ESSERE BLOCCATO !!!)
+    SUS -> Passeren fa la insertblocked!! (chi minchia lo sblocca?)
+    Non c'è nessun comando di sblocco da nessuno (facendo trace del semaforo su cui è bloccato non viene più utilizzato).
