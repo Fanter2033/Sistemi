@@ -55,6 +55,9 @@ support_t* getSupportData();
 int getProcessID(int parent);
 int getChildren(int *children, int size);
 
+int findLine(int* cmdAddr);
+int findDevice(int line, int* cmdAddr); 
+
 void syscallExcHandler();
 
 int PID = 1;    /* 1 is the init process */
@@ -350,7 +353,11 @@ int DO_IO(int *cmdAddr, int *cmdValues){
     /*Find the device function*/
     //int indexDevice = findDevice(cmdAddr);
     //temporaneo:
-    int indexDevice=findDevice(cmdAddr);
+    int line = findLine(cmdAddr);
+    int device = findDevice(line,cmdAddr);
+
+    int indexDevice = ((line-3)*8)+2+device;
+
 
     /*Write command Values from command Address */
         /*devreg.dtp.command oppure 
@@ -393,49 +400,21 @@ int DO_IO(int *cmdAddr, int *cmdValues){
 }
 
 
-/* NON FUNGE */
-//si possono modificare le etichette ai semafori ma segnalo così cambiamo anche il resto :)
-int findDevice(int *cmdAddr){
-    /*
-    All Lines Devices:
+int findLine(int *cmdAddr){
+    if (cmdAddr < (memaddr)DEV_REG_START || cmdAddr >= (memaddr) DEV_REG_END){
+            return -1;
+    }
+    else
+        return (((int)cmdAddr - (int)DEV_REG_START) / 0x80) + 3;
 
-    0 -> PLT
-    1 -> Interval Timer
-    2...9 -> Disk Devices
-    10...17 -> Flash Devices
-    18...25 -> Network Devices
-    26...33 -> Printer Devices
-    34...41 -> Terminal Devices
-
-    DEV_IL_START = 3;
-    */
-
-    /* DEV_REG_ADDR ci restituisce l'indirizzo della linea IL_*, del device 0-N_DEV_PER_IL*/
-    int value = cmdAddr; //è la base
-    if (value < (memaddr)DEV_REG_START || value >= (memaddr) DEV_REG_END){
-        return -1;
-    }
-    else if (value >= (memaddr) DEV_REG_ADDR(IL_DISK, 0) && value < (memaddr)DEV_REG_ADDR(IL_DISK, N_DEV_PER_IL)){
-        /*disk device*/
-        return  ((128-(DEV_REG_ADDR(IL_DISK, N_DEV_PER_IL)-value))/16)+2; 
-    }
-    else if (value >= (memaddr)DEV_REG_ADDR(IL_FLASH, 0) && value < (memaddr) DEV_REG_ADDR(IL_FLASH, N_DEV_PER_IL)){
-        /*flash device*/
-        return  ((128-(DEV_REG_ADDR(IL_FLASH, N_DEV_PER_IL)-value))/16)+10;
-    }
-    else if (value >= (memaddr)DEV_REG_ADDR(IL_ETHERNET, 0) && value < (memaddr) DEV_REG_ADDR(IL_ETHERNET, N_DEV_PER_IL)){
-        /*network */
-        return  ((128-(DEV_REG_ADDR(IL_ETHERNET, N_DEV_PER_IL)-value))/16)+18;
-    }
-    else if (value >= (memaddr)DEV_REG_ADDR(IL_PRINTER, 0) && value < (memaddr) DEV_REG_ADDR(IL_PRINTER, N_DEV_PER_IL)){
-        /*Printer*/
-        return ((128-(DEV_REG_ADDR(IL_PRINTER, N_DEV_PER_IL)-value))/16)+26;
-    }
-    else if (value >= (memaddr)DEV_REG_ADDR(IL_TERMINAL, 0) && value < (memaddr) DEV_REG_ADDR(IL_TERMINAL, N_DEV_PER_IL)){
-        /*terminal*/
-        return ((128-(DEV_REG_ADDR(IL_TERMINAL, N_DEV_PER_IL)-value))/8)+34;
-    }
 }
+
+int findDevice(int line,int* cmdAddr){
+
+    return line == IL_TERMINAL ? (int)((int)cmdAddr - (int)DEV_REG_ADDR(line,0)) / 8 : (int)((int)cmdAddr - (int)DEV_REG_ADDR(line,0)) / 16; 
+}
+
+
 /*Restituisce il tempo di esecuzione (in microsecondi, quindi *1000?) del processo */
 cpu_t getTime(){
     return (currentProcess->p_time); /* v0 inizializzata dopo*/

@@ -15,6 +15,7 @@
 #define CAUSEIP ((getCAUSE() & CAUSE_IP_MASK) >> CAUSE_IP_BIT(0)) 
 #define DISABLEINT(LINE) setCAUSE(getCAUSE() & (~((1<<LINE)<<CAUSE_IP_BIT(0))));
 
+
 #define TERMSTATMASK 0xFF
 
 //temporaneo:
@@ -144,8 +145,11 @@ void resolveTerm(int line, int device){
     
     if( termReg->transm_status >1 && termReg->transm_status != BUSY ) {
         unsigned int status = (termReg->transm_status) & TERMSTATMASK;
-        termReg->transm_command = ACK ; 
-        indexDevice = findDevice(((int)termReg)+8);
+        termReg->transm_command = ACK ;
+        
+        indexDevice = ((line-3)*8)+2+ (2*device) + 1 ;
+
+        //indexDevice = findDevice(((int)termReg)+8);
         sem = &deviceSem[indexDevice];
         /* V on trasm (sub) device */
         pcb_t* unlockedPCB = V((int*)sem);
@@ -161,7 +165,8 @@ void resolveTerm(int line, int device){
     if(termReg->recv_status >1 && termReg->recv_status != BUSY){
         unsigned int status = (termReg->recv_status)& TERMSTATMASK;
         termReg->recv_command = ACK;
-        indexDevice = findDevice((int)(termReg));
+        indexDevice = ((line-3)*8)+2+ (2*device);
+        //indexDevice = findDevice((int)(termReg));
         sem = &deviceSem[indexDevice];
         /* V on recv (sub) device */
         pcb_t* unlockedPCB = V((int*)sem);

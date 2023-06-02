@@ -19,7 +19,7 @@
     10...17 -> Flash Devices
     18...25 -> Network Devices
     26...33 -> Printer Devices
-    
+    //in 3.1, ultimo punto dice di avere un semaforo per ogni sub-device
     //8 terminal -> 16 sub-device
     34...49 -> Terminal Devices:
         34 35   Terminal 1 W-R
@@ -28,8 +28,6 @@
         48 49   Terminal 7 W-R
 
 */
-
-int termSem;
 
 int readyPCB;
 
@@ -76,9 +74,6 @@ int main(){
         deviceSem[i]=0;
     }
     pseudoClockSem=0;
-
-    //temporaneo:
-    termSem = 0;
 
     /* set Interval Timer to 100 ms */
     LDIT(PSECOND);
