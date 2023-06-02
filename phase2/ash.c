@@ -12,7 +12,7 @@ void removeEmptySemd(semd_t* s){
 }
 
 int insertBlocked(int *semAdd, pcb_t *p){
-    if (p->p_semAdd!=NULL);    //case: p is already blocked
+    if (p->p_semAdd!=NULL) return 1;    //case: p is already blocked
     /* search for semAdd as key in hash */
     struct semd_t* iterator; 
     int bkt;
