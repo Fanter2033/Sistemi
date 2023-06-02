@@ -9,7 +9,7 @@
 
 
 
-/* Additional function : if the semaphore's list of proc. is empty remove it from the ash*/
+/* additional function: if the semaphore's list of proc. is empty removes it from the ash*/
 void removeEmptySemd(semd_t* s);
 
 /* add PCB pointed by p in the SEMD blocked process with semAdd as key */
@@ -31,7 +31,8 @@ pcb_t* headBlocked(int *semAdd);
 /* initialize semdFree_h using an array of semd_t */
 void initASH();
 
-/* additional function for phase2 */
+/* additional function for phase2: search a pcb in ready queue and in semaphores via its pid 
+   and returns it (NULL if it isn't found) */
 pcb_t* findPCB_pid(int pid, struct list_head *queue);
 
 #endif

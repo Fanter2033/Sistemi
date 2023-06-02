@@ -1,6 +1,9 @@
 #include "ash.h"
 
+/* Active Semaphore Hash*/
 HIDDEN DECLARE_HASHTABLE(semd_h,5);
+
+/* List of free or unused SEMD */
 HIDDEN LIST_HEAD(semdFree_h);
 
 

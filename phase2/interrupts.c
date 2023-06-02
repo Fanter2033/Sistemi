@@ -7,21 +7,13 @@
 #include <umps3/umps/libumps.h>
 #include <umps3/umps/arch.h>
 
-/* take T and N and return the n-th bit of T */
 #define ALDEV 50
-/* find nth bit of n */
+/* Takes T and N and return the n-th bit of T */
 #define NBIT(T,N) ((T & (1 << N)) >> N) 
 /*CauseIP part of Cause register*/
 #define CAUSEIP ((getCAUSE() & CAUSE_IP_MASK) >> CAUSE_IP_BIT(0)) 
 #define DISABLEINT(LINE) setCAUSE(getCAUSE() & (~((1<<LINE)<<CAUSE_IP_BIT(0))));
-
-
 #define TERMSTATMASK 0xFF
-
-//temporaneo:
-extern int termSem;
-
-extern int readyPCB;
 
 extern int findDevice(int* cmdAddr);
 extern int processCount;
@@ -62,11 +54,9 @@ void interruptHandler(){
                 nonTimerInterruptHandler(line);
                 break;
             }
-            /* n-th bit line resolved, so 1->0*/
-            DISABLEINT(line);
         }
     }
-    /* return control to Current Process */
+    /* return control to Current Process if it exists*/
     if (currentProcess==NULL){
         schedule();
     }
@@ -86,7 +76,7 @@ void nonTimerInterruptHandler(int interruptLine){
             deviceBitMap = (int *)CDEV_BITMAP_ADDR(IL_DISK);
             for (int bit=0;bit<8;bit++){
                 if (NBIT(*deviceBitMap,bit)==ON){
-                    resolveTerm(interruptLine,bit);
+                    resolveNonTerm(interruptLine,bit);
                     *deviceBitMap &= (~(1<<bit));
                 }
             }
@@ -97,7 +87,7 @@ void nonTimerInterruptHandler(int interruptLine){
             deviceBitMap = (int *)CDEV_BITMAP_ADDR(IL_FLASH);
             for (int bit=0;bit<8;bit++){
                 if (NBIT(*deviceBitMap,bit)==ON){
-                    resolveTerm(interruptLine,bit);
+                    resolveNonTerm(interruptLine,bit);
                     *deviceBitMap &= (~(1<<bit));
                 }
             }
@@ -108,7 +98,7 @@ void nonTimerInterruptHandler(int interruptLine){
             deviceBitMap = (int *)CDEV_BITMAP_ADDR(IL_ETHERNET);
             for (int bit=0;bit<8;bit++){
                 if (NBIT(*deviceBitMap,bit)==ON){
-                    resolveTerm(interruptLine,bit);
+                    resolveNonTerm(interruptLine,bit);
                     *deviceBitMap &= (~(1<<bit));
                 }
             }
@@ -119,7 +109,7 @@ void nonTimerInterruptHandler(int interruptLine){
             deviceBitMap = (int *)CDEV_BITMAP_ADDR(IL_PRINTER);
             for (int bit=0;bit<8;bit++){
                 if (NBIT(*deviceBitMap,bit)==ON){
-                    resolveTerm(interruptLine,bit);
+                    resolveNonTerm(interruptLine,bit);
                     *deviceBitMap &= (~(1<<bit));
                 }
             }
@@ -141,15 +131,11 @@ void nonTimerInterruptHandler(int interruptLine){
 void resolveTerm(int line, int device){
     termreg_t* termReg = (DEV_REG_ADDR( line, device));
     int sem;
-    indexDevice=-1;     //reinitialize indexDevice
     
     if( termReg->transm_status >1 && termReg->transm_status != BUSY ) {
         unsigned int status = (termReg->transm_status) & TERMSTATMASK;
         termReg->transm_command = ACK ;
-        
         indexDevice = ((line-3)*8)+2+ (2*device) + 1 ;
-
-        //indexDevice = findDevice(((int)termReg)+8);
         sem = &deviceSem[indexDevice];
         /* V on trasm (sub) device */
         pcb_t* unlockedPCB = V((int*)sem);
@@ -158,24 +144,21 @@ void resolveTerm(int line, int device){
             (unlockedPCB->valueAddr)[0] = status;
             /* insert unlocked in ready queue*/
             insertProcQ(&readyQueue,unlockedPCB);
-            readyPCB++;
         }
     }
-    indexDevice = -1;
+
     if(termReg->recv_status >1 && termReg->recv_status != BUSY){
         unsigned int status = (termReg->recv_status)& TERMSTATMASK;
         termReg->recv_command = ACK;
         indexDevice = ((line-3)*8)+2+ (2*device);
-        //indexDevice = findDevice((int)(termReg));
         sem = &deviceSem[indexDevice];
         /* V on recv (sub) device */
         pcb_t* unlockedPCB = V((int*)sem);
         if (unlockedPCB != NULL){
-            unlockedPCB->p_s.reg_v0 = 0;        //DOIO è andata a buon fine
+            unlockedPCB->p_s.reg_v0 = 0;    //DOIO è andata a buon fine
             (unlockedPCB->valueAddr)[0] = status;
             /* insert unlocked in ready queue*/
             insertProcQ(&readyQueue,unlockedPCB);
-            readyPCB++;
         }
     }  
 }
@@ -184,35 +167,26 @@ void resolveNonTerm(int line, int device){
 
     /* take device register from Address */
     dtpreg_t* devReg = (DEV_REG_ADDR( line, device));
-    
-    /* save off the status from device register */
-    unsigned int status = devReg -> status;
-    /* ACK the interrupt */
-    devReg->command = ACK;
+    int sem;
 
-    /* V on semaphore */
-    int* sem = deviceSem+findDevice((int)devReg); // vedi operazione in DOIO, è identica
-    pcb_t* waitingPCB = headBlocked(sem);
-    if (waitingPCB != NULL){
-        /* unlock PCB */
-        V(sem);
-        waitingPCB ->p_s.reg_v0 = 0;
-        (waitingPCB->valueAddr)[0] = status;
-        /* insert in readyQueue */
-        insertProcQ(&readyQueue,waitingPCB);
-        readyPCB++;
+    if(devReg->status > 1 && devReg->status != BUSY){
+        /* save off the status from device register */
+        unsigned int status = devReg -> status;
+        /* ACK the interrupt */
+        devReg->command = ACK;
+        indexDevice = ((line-3)*8)+2+device;
+        sem = &deviceSem[indexDevice];
+        /* V on semaphore */
+        pcb_t* unlockedPCB = V((int*)sem);
+        if (unlockedPCB != NULL){
+            unlockedPCB->p_s.reg_v0 = 0;    //DOIO a buon fine
+            (unlockedPCB->valueAddr)[0] = status;
+            /* insert unlocked in readyQueue */
+            insertProcQ(&readyQueue,unlockedPCB);
+        }
     }
     
 }
-
-/*
-    SUS valori del semaforo non utilizzati.Note:
-    1. in P ha senso chiamare currentProcess (P chiamata in DOIO dal kernel).
-    2. in V non ha senso chiamare current (sarebbe totalmente un altro processo, qui siamo a livello kernel)
-    3. P sempre bloccante 3 non decrementa mai
-    4. V non è mai bloccante !!! (sus ma ha anche molto senso per i device (sincronizzazione))
-    5. valore in questo caso usato come conta!!!
-*/
 
 /* P on device semaphore */
 void P(int* sem){
@@ -242,22 +216,20 @@ void PLTinterrupt(){
     
     if(((getSTATUS() & STATUS_TE) >> STATUS_TE_BIT) == ON){
         DISABLEINT(1);
-        setTIMER(50);
+        setTIMER(50); /* Questo non importa */
         currentProcess->p_s = (*BIOSDPState);
         insertProcQ(&readyQueue,currentProcess);
-        readyPCB++;
         schedule();
     }
 }
 
-void ITInterrupt(){ //ogni 100 millisecondi
+void ITInterrupt(){ /* it happens every 100 millisecond */
     /* ack the interrupt */
     LDIT(PSECOND);
     /* unlock ALL processes */
     while(headBlocked(&pseudoClockSem)!=NULL){
         insertProcQ(&readyQueue,removeBlocked(&pseudoClockSem));
         SBcount--;
-        readyPCB++;
     }   
     /* set pseudoClockSem to 0 */
     pseudoClockSem = 0;

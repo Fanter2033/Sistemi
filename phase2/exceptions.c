@@ -9,7 +9,6 @@
 #include <umps3/umps/types.h>
 
 #define ALDEV 50
-extern int readyPCB;
 
 extern int processCount;
 extern int SBcount;
@@ -20,19 +19,11 @@ extern void interruptHandler();
 extern int pseudoClockSem;
 extern int deviceSem[ALDEV];
 extern int pseudoClockSem;
-extern void P(int* sem); //dichiarato in interrupts.c
-//temporaneo:
-extern int termSem;
-
+extern void P(int* sem);
 extern int processStartTime;
+
 state_t* BIOSDPState;
 int excTOD;
-
-//TODO list
-// prima di ogni schedule(), bisogna incrementare il TOD (sezione 3.8)
-
-// dichiaro le funzioni per non avere problemi nel make
-// si potranno togliere con la distinzione .h e .c
 
 void *memcpy(void *dest, const void *src, unsigned long n)
 {
@@ -54,13 +45,12 @@ void waitForClock();
 support_t* getSupportData();
 int getProcessID(int parent);
 int getChildren(int *children, int size);
-
 int findLine(int* cmdAddr);
 int findDevice(int line, int* cmdAddr); 
-
 void syscallExcHandler();
+void exceptionHandler();
 
-int PID = 1;    /* 1 is the init process */
+int PID = 1;    /* init process has pid: 1 */
 
 
 void exceptionHandler(){
@@ -76,7 +66,7 @@ void exceptionHandler(){
     else if (excCode == 8){
         syscallExcHandler();
     }
-    else if (excCode < 4){  //1-2-3
+    else if (excCode < 4){  /*1-2-3*/
         passUporDie(PGFAULTEXCEPT);
     }
     else{   /* 4-7 o 9-12 */
@@ -90,12 +80,11 @@ void syscallExcHandler(){
     /* increase PC to avoid loop on Syscall */
     BIOSDPState->pc_epc +=WORDLEN;
     
-    /* check process if is in Kernel Mode */
+    /* check if process is in Kernel Mode */
     if (((getSTATUS() & STATUS_KUc)) == 2 ){
         /* set ExcCode to RI */
         BIOSDPState->cause = ((EXC_RI << CAUSE_EXCCODE_BIT));
-
-        /*call Program Trap Handler*/
+        /* call Program Trap Handler */
         passUporDie(GENERALEXCEPT);
     }
 
@@ -156,7 +145,8 @@ void syscallExcHandler(){
             break;
         }   
 
-    /* se la syscall blocca il processo, allora è stato invocato lo scheduler, quindi non si arriverà qui */
+    /*if any syscall has blocked the process,the scheduler
+     must've been invoked, so we shouldn't arrive here */
     LDST(BIOSDPState);
     }
 }
@@ -164,15 +154,14 @@ void syscallExcHandler(){
 
 int createProcess(state_t *statep, support_t *supportp, nsd_t *ns){
     pcb_t* newProc = allocPcb();
-    //there are no more free pcbs
+    /*no more free PCB to assign*/
     if (newProc == NULL){ 
         return 0;
     } else {
         PID++;
         processCount++;
-        /* The new process is set to be the 
+        /* the new process is set to be the 
         child of the current one and added to the readyQueue */
-        readyPCB++;
         insertProcQ(&readyQueue, newProc);
         insertChild(currentProcess, newProc); 
         newProc->p_s = (*statep);
@@ -181,11 +170,11 @@ int createProcess(state_t *statep, support_t *supportp, nsd_t *ns){
         newProc->p_semAdd = NULL;
         newProc->p_pid = PID;
 
-        //if ns==NULL, it fails and enters
+        /* if the namespace is null, it fails and enters */
         if(!addNamespace(newProc, ns)){ 
-            /* This could be made by pointing the same structure as the father */
+            /* this could be made by pointing the same structure as the father */
             for(int i=0; i<NS_TYPE_MAX; i++){
-                //gives the new process the parent's namespace
+                /* gives the new process the parent's namespace */
                 nsd_t* tmpNs = getNamespace(currentProcess, i);
                 addNamespace(newProc, tmpNs); 
             }
@@ -195,44 +184,8 @@ int createProcess(state_t *statep, support_t *supportp, nsd_t *ns){
     return PID;
 }
 
-#if 0
-void killProcess(pcb_t *pcbToKill){
-
-    if (pcbToKill -> p_semAdd != NULL){
-        int *tmpSem = pcbToKill -> p_semAdd;
-        outBlocked(pcbToKill);
-        if(!((deviceSem <= tmpSem &&tmpSem <= deviceSem + ALDEV) || tmpSem == (&pseudoClockSem))){ 
-            if(headBlocked(tmpSem)==NULL)
-                *tmpSem = 1 - *tmpSem;
-        }
-        else{
-            SBcount--;
-        }
-    }
-
-    freePcb(pcbToKill);
-    processCount--;
-}
-
-void killTree(pcb_t *pcbToKill){
-
-    while(!emptyChild(pcbToKill)){
-        killTree(removeChild(pcbToKill));   //rimuovo un nodo dall'albero e richiamo ricorsivo su quel nodo.
-    }
-    killProcess(pcbToKill);
-}
-
 void terminateProcess(int pid){
-    pcb_t* toKill = (pid== 0 ||  pid == currentProcess->p_pid) ? currentProcess : findPCB_pid(pid,&readyQueue);
-    outChild(toKill);       //lo scollego dal padre
-    killTree(toKill);
-}
-#endif
-
-
-
-void terminateProcess(int pid){
-    if( pid==0 || pid == currentProcess->p_pid ) {  /* Kills the current process and progeny */
+    if( pid==0 || pid == currentProcess->p_pid ) { /* kills the current process and progeny */
         outChild(currentProcess);
         processCount--;
         while(!emptyChild(currentProcess)){
@@ -246,15 +199,15 @@ void terminateProcess(int pid){
         /*each pcb is freed in its recursive call*/
         freePcb(currentProcess);
         currentProcess=NULL;
-    } else {  /* Kills the pointed process and progeny */
+    } else {  /* kills the pointed process and progeny */
         pcb_t* proc = findPCB_pid(pid, (&readyQueue));
         outChild(proc);
         processCount--;
-        /*the process is either blocked at a semaphore or on the ready queue*/
+        /* the process is either blocked at a semaphore or on the ready queue*/
         if(proc->p_semAdd!=NULL){
             int *tmpSem = outBlocked(proc);
-            /*the semaphore is incremente only if it is not a device one*/
-            if(!((deviceSem <= tmpSem && tmpSem <= deviceSem + ALDEV) || tmpSem == &pseudoClockSem)){ // *sizeof(int) dovrebbe essere implicito in C
+            /*the semaphore is incremented only if it is not a soft blocking one*/
+            if(!((deviceSem <= tmpSem && tmpSem <= deviceSem + ALDEV) || tmpSem == &pseudoClockSem)){ 
                 if (headBlocked(tmpSem)==0){
                     *(tmpSem) = 1 - *(tmpSem);
                 }            
@@ -264,7 +217,6 @@ void terminateProcess(int pid){
             }
         } else { 
             outProcQ(&readyQueue, proc);
-            readyPCB--;
         }
 
         while(!emptyChild(proc)){
@@ -272,7 +224,7 @@ void terminateProcess(int pid){
             it only exits the loop when all the siblings have been removed */
             pcb_t* firstChild = list_first_entry(&proc->p_child,struct pcb_t, p_child);
             removeChild(proc);
-            /*terminates the subtree of the first child*/
+            /* terminates the subtree of the first child*/
             terminateProcess(firstChild->p_pid);
        }
        freePcb(proc);
@@ -286,7 +238,7 @@ void terminateProcess(int pid){
 
 bool Passeren(int* sem){
 
-    if (*sem == 0){     /* blocked */
+    if (*sem == 0){     /* blocking */
         /* current process enters in block state */
         insertBlocked(sem,currentProcess);
         return true;
@@ -294,7 +246,6 @@ bool Passeren(int* sem){
    
     else if (headBlocked(sem) != NULL){   /* more pcb in sem queue */
         insertProcQ(&readyQueue,removeBlocked(sem));
-        readyPCB++;
         return false; 
     }
     
@@ -305,29 +256,29 @@ bool Passeren(int* sem){
 }
 
 bool Verhogen(int* sem){
-    if((*sem) == 1){
+    if((*sem) == 1){    /* blocking */
+        /* current process enters in block state*/
         insertBlocked(sem,currentProcess);
         return true;
     }
     
-    else if (headBlocked(sem) != NULL){
+    else if (headBlocked(sem) != NULL){    /* more pcb in sem queue */
         insertProcQ(&readyQueue,removeBlocked(sem));
-        readyPCB++;
         return false;
     }
-    else{
+    else{    /* there is NO semaphore -> no PCB */ 
         (*sem) = 1;
         return false;
     }
 }
 
 
-/* Effettua un’operazione di I/O. */
+/* performs an input output operation*/
 int DO_IO(int *cmdAddr, int *cmdValues){
     currentProcess->valueAddr = cmdValues;
     
     /* 
-    I device si trovano a 
+    I device si trovano a:
         0x1000.0054 - 0x1000.0063 Line 3, Device 0 (Device Register)
         0x1000.0064 - 0x1000.0073 Line 3, Device 1 (Device Register)
         ...
@@ -338,21 +289,10 @@ int DO_IO(int *cmdAddr, int *cmdValues){
         0x1000.01D4 - 0x1000.0253 Line 6, device 0-7 (Device Register)
         0.1000.0254 - 0x1000.02D3 Line 7, device 0-7 (Device Register)
 
-    Disk devices
-    Flash devices
-    Network Adapters
-    Printer devices
-    Terminal devices (receive & transmit)
-
+    Disk, Flash, Network, Printer, Terminal (receive & transmit)
     Base + 0x4 è dove mettere il comando (non per il terminale)
-
-    Installed device bitmap ci dice a quali interrupt sono collegati i device
-    Interrupt device bitmap, come sopra ma dice quale interrupt è attivo
     */
 
-    /*Find the device function*/
-    //int indexDevice = findDevice(cmdAddr);
-    //temporaneo:
     int line = findLine(cmdAddr);
     int device = findDevice(line,cmdAddr);
 
@@ -360,26 +300,24 @@ int DO_IO(int *cmdAddr, int *cmdValues){
 
 
     /*Write command Values from command Address */
-        /*devreg.dtp.command oppure 
-        devreg.term.recv_command/devreg.term.transm_command*/
 
     if (indexDevice<0){
         return -1;
     }
     else if (indexDevice < 34){
-        /*non-terminal*/
+        /*Non-terminal*/
         dtpreg_t* regdevice = (dtpreg_t*)(cmdValues);
         cmdAddr = regdevice;
     }
     else {
-        /*terminal*/
+        /*Terminal*/
         termreg_t* terminal;
         if ((unsigned int)cmdAddr % 16 == 4 ){
             terminal = cmdAddr;
             terminal->recv_command = cmdValues[1]; 
         }
         else {
-            /* cmdAddr is the trasm  address, so the terminal is cmdAddress - 8*/
+            /* cmdAddr is the trasm address, so the terminal is cmdAddress - 8*/
             terminal = (unsigned int)cmdAddr - 8;
             terminal -> transm_command = cmdValues[1];
         } 
@@ -390,12 +328,7 @@ int DO_IO(int *cmdAddr, int *cmdValues){
     int sem = (&deviceSem[indexDevice]);
     currentProcess->p_s = *BIOSDPState;
     P((int*)sem);
-/*  
-    At the completion of the I-O operation the device register values 
-    are copied back in the cmdValues array. The return value of this system 
-    call is 0 in case of success, -1 otherwise.
-    Dobbiamo ritornare qualcosa?
-*/
+
     return 0;
 }
 
@@ -410,20 +343,18 @@ int findLine(int *cmdAddr){
 }
 
 int findDevice(int line,int* cmdAddr){
-
     return line == IL_TERMINAL ? (int)((int)cmdAddr - (int)DEV_REG_ADDR(line,0)) / 8 : (int)((int)cmdAddr - (int)DEV_REG_ADDR(line,0)) / 16; 
 }
 
 
-/*Restituisce il tempo di esecuzione (in microsecondi, quindi *1000?) del processo */
+/* returns the executing time of the process */
 cpu_t getTime(){
-    return (currentProcess->p_time); /* v0 inizializzata dopo*/
+    return (currentProcess->p_time);
 }
 
 void waitForClock(){
     if(pseudoClockSem == 0){
         /* Always block on Psuedo-clock sem */
-        /* increase PC to avoid loop on Syscall */
         currentProcess->p_s = *BIOSDPState;
         /* current process enters in block state */
         insertBlocked(&pseudoClockSem, currentProcess);
@@ -431,22 +362,17 @@ void waitForClock(){
     }
     else 
         pseudoClockSem -- ;
-    
 }
-
 
 support_t* getSupportData(){
     return currentProcess->p_supportStruct;
 }
 
-/*Restituisce l’identificatore del processo invocante se parent == 0, 
-  quello del genitore del processo invocante altrimenti.*/
+/*returns the identifier of the invoking process if parent == 0, 
+  the invoking process' parent one otherwise */
 
 int getProcessID(int parent){
-    /*type=0 fa riferimento al PID, usiamo 
-    p_pid finchè non carica i file giusti */
-    /* Si potrebbe estendere a tutti i tipi, dipende da cosa 
-    facciamo nella create process */
+    /* type=0 is the PID namespace, currently using p_pid */
     nsd_t* ns = getNamespace(currentProcess, NS_PID);
     if (parent){
         if (ns==getNamespace(currentProcess->p_parent,NS_PID)){
@@ -457,19 +383,19 @@ int getProcessID(int parent){
     else return currentProcess->p_pid;
 }
 
-/*Deve ritornare il numero di figli con lo stesso namespace */
+/* Returns the number of children within the same namespace */
 int getChildren(int* children, int size){
     int valueToReturn = 0;
     pcb_t* firstChild = list_first_entry(&currentProcess->p_child,struct pcb_t,p_child);
     
-    if (!emptyChild(currentProcess)){                            // controllo se il pcb ha figli
+    if (!emptyChild(currentProcess)){                            /* check if pcb has children*/
         nsd_t* currentNs = getNamespace(currentProcess, NS_PID);
         struct pcb_t* iterator = NULL;
         
         list_for_each_entry(iterator,&firstChild->p_sib,p_sib){
             if (currentNs == getNamespace(iterator, NS_PID)){   
                 if (size < valueToReturn)
-                    *(children + valueToReturn) = iterator->p_pid;// finche riesco assegno alla cella contigua dell'array il pid del processo figlio 
+                    *(children + valueToReturn) = iterator->p_pid; /* Finchè riesco assegno alla cella contigua dell'array il pid del processo figlio */ 
                 valueToReturn ++;
             }
         }
