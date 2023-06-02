@@ -10,22 +10,7 @@
 #define NBIT(T,N) ((T & (1 << N)) >> N) 
 #define DEVNUM 8
 
-/*
-    All Lines Devices:
 
-    0 -> PLT
-    1 -> Interval Timer
-    2...9 -> Disk Devices
-    10...17 -> Flash Devices
-    18...25 -> Network Devices
-    26...33 -> Printer Devices
-    //in 3.1, ultimo punto dice di avere un semaforo per ogni sub-device
-    //8 terminal -> 16 sub-device
-    34...49 -> Terminal Devices:
-        34 .. 41 -> Terminal - (W)
-        42 .. 49 -> Terminal - (R)
-
-*/
 int readyPCB;
 
 int processCount;   /*process started but not yet terminated */
@@ -33,7 +18,6 @@ int SBcount;    /* soft-blocked count */
 pcb_t* currentProcess;  /* pcb that is in running state */
 struct list_head readyQueue;  /* queue of ready pcb */
 
-//int deviceSem[ALDEV]; 
 int intervalTimerSem;
 int diskSem[DEVNUM];
 int flashSem[DEVNUM];
@@ -106,8 +90,7 @@ int main(){
     init-> p_s.status =  (ALLOFF | (IEPON | IMON | TEBITON)) ;
 
     /* set PC to the address of test (assign in t9 reg for tecnical reason) */
-    init->p_s.pc_epc = (memaddr) test;
-    init->p_s.reg_t9 = (memaddr) test;
+    init->p_s.pc_epc = init->p_s.reg_t9 = (memaddr) test;
     
     /* set SP to RAMTOP */
     RAMTOP(init->p_s.reg_sp);

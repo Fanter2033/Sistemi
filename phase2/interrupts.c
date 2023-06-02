@@ -45,7 +45,6 @@ void resolveNonTerm(int line, int device);
 void ITInterrupt();
 void PLTinterrupt();
 
-int indexDevice;
 
 void interruptHandler(){
     /* line 0 not considered (NO multiprocessor) */
@@ -66,7 +65,7 @@ void interruptHandler(){
                 break;
             }
             /* n-th bit line resolved, so 1->0*/
-            DISABLEINT(line);
+            //DISABLEINT(line);
         }
     }
     /* return control to Current Process */
@@ -142,17 +141,15 @@ void nonTimerInterruptHandler(int interruptLine){
 }
 
 void resolveTerm(int line, int device){
-    termreg_t* termReg = (DEV_REG_ADDR( line, device));
-    int* sem;
-    indexDevice=-1;     //reinitialize indexDevice
+    termreg_t* termReg = (termreg_t*)(DEV_REG_ADDR( line, device));
+    memaddr sem;
     
     if( termReg->transm_status > 1 && termReg->transm_status != BUSY ) {
         unsigned int status = (termReg->transm_status) & TERMSTATMASK;
         termReg->transm_command = ACK ; 
-        indexDevice = findDevice(IL_TERMINAL,((int)termReg)+8);
-        sem = &(termSem[indexDevice]);
+        sem = &(termSem[findDevice(IL_TERMINAL,((int)(termReg))+8)]);
         /* V on trasm (sub) device */
-        pcb_t* unlockedPCB = V(sem);
+        pcb_t* unlockedPCB = V((int*)sem);
         if (unlockedPCB != NULL){
             unlockedPCB->p_s.reg_v0 = 0;    //DOIO è andata a buon fine
             (unlockedPCB->valueAddr)[0] = status;
@@ -160,14 +157,12 @@ void resolveTerm(int line, int device){
             insertProcQ(&readyQueue,unlockedPCB);
         }
     }
-    indexDevice = -1;
     if(termReg->recv_status >1 && termReg->recv_status != BUSY){
         unsigned int status = (termReg->recv_status)& TERMSTATMASK;
         termReg->recv_command = ACK;
-        indexDevice = findDevice(IL_TERMINAL,((int)termReg));
-        sem = (&termSem[indexDevice]);
+        sem = (&termSem[findDevice(IL_TERMINAL,((int)termReg))]);
         /* V on recv (sub) device */
-        pcb_t* unlockedPCB = V(sem);
+        pcb_t* unlockedPCB = V((int*)sem);
         if (unlockedPCB != NULL){
             unlockedPCB->p_s.reg_v0 = 0;        //DOIO è andata a buon fine
             (unlockedPCB->valueAddr)[0] = status;
@@ -232,7 +227,7 @@ void PLTinterrupt(){
     
     if(((getSTATUS() & STATUS_TE) >> STATUS_TE_BIT) == ON){
         DISABLEINT(1);
-        setTIMER(50);
+        setTIMER(100000000);
         currentProcess->p_s = (*BIOSDPState);
         insertProcQ(&readyQueue,currentProcess);
         schedule();
@@ -249,8 +244,10 @@ void ITInterrupt(){ //ogni 100 millisecondi
     }   
     /* set pseudoClockSem to 0 */
     pseudoClockSem = 0;
+    /*
     if (currentProcess==NULL){
         schedule();
     }
+    */
     LDST(BIOSDPState);
 }
