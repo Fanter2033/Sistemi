@@ -24,4 +24,36 @@ High level SYS call from kernel mode process
 p1 knows p5 ended
 p8root starts
 child1 starts
-chkernel panic()
+child2 starts
+leaf process (1) starts
+leaf process (2) starts
+leaf process (3) starts
+leaf process (4) starts
+p8root starts
+child1 starts
+child2 starts
+leaf process (1) starts
+leaf process (2) starts
+leaf process (3) starts
+leaf process (4) starts
+p8root starts
+child1 starts
+child2 starts
+leaf process (1) starts
+leaf process (2) starts
+leaf process (3) starts
+leaf process (4) starts
+p8root starts
+child1 starts
+child2 starts
+leaf process (1) starts
+leaf process (2) starts
+leaf process (3) starts
+leaf process (4) starts
+p11 starts
+ns pid in parent namespace
+ns pid in parent namespace
+ns pid not in parent namespace
+ns pid not in parent namespace
+Inconsistent GETCHILDREN namespace management 1
+kernel panic()

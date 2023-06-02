@@ -8,8 +8,28 @@
 #include <umps3/umps/cp0.h>
 
 #define NBIT(T,N) ((T & (1 << N)) >> N) 
-#define DEVNUM 8
+#define ALDEV 50  
 
+/*
+    All Lines Devices:
+
+    0 -> PLT
+    1 -> Interval Timer
+    2...9 -> Disk Devices
+    10...17 -> Flash Devices
+    18...25 -> Network Devices
+    26...33 -> Printer Devices
+    
+    //8 terminal -> 16 sub-device
+    34...49 -> Terminal Devices:
+        34 35   Terminal 1 W-R
+        36 37   Terminal 2 W-R
+        ...
+        48 49   Terminal 7 W-R
+
+*/
+
+int termSem;
 
 int readyPCB;
 
@@ -18,13 +38,7 @@ int SBcount;    /* soft-blocked count */
 pcb_t* currentProcess;  /* pcb that is in running state */
 struct list_head readyQueue;  /* queue of ready pcb */
 
-int intervalTimerSem;
-int diskSem[DEVNUM];
-int flashSem[DEVNUM];
-int netSem[DEVNUM];
-int printerSem[DEVNUM];
-int termSem[(DEVNUM*2)];
-
+int deviceSem[ALDEV];      
 
 int pseudoClockSem;
 
@@ -58,15 +72,13 @@ int main(){
     SBcount=0;
     mkEmptyProcQ(&readyQueue); 
     currentProcess=NULL;
-    for (int i=0;i<8;i++){
-        //deviceSem[i]=0;
-        flashSem[i] = 0;
-        netSem[i] = 0;
-        printerSem[i] = 0;
-        termSem[i] = 0;
-        termSem[i+8] = 0;
+    for (int i=0;i<ALDEV;i++){
+        deviceSem[i]=0;
     }
     pseudoClockSem=0;
+
+    //temporaneo:
+    termSem = 0;
 
     /* set Interval Timer to 100 ms */
     LDIT(PSECOND);
@@ -90,10 +102,13 @@ int main(){
     init-> p_s.status =  (ALLOFF | (IEPON | IMON | TEBITON)) ;
 
     /* set PC to the address of test (assign in t9 reg for tecnical reason) */
-    init->p_s.pc_epc = init->p_s.reg_t9 = (memaddr) test;
+    init->p_s.pc_epc = (memaddr) test;
+    init->p_s.reg_t9 = (memaddr) test;
     
     /* set SP to RAMTOP */
     RAMTOP(init->p_s.reg_sp);
+
+    //addokbuf("kernel started\n");
 
     /* call the scheduler */
     schedule();

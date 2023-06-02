@@ -8,8 +8,7 @@
 #include <umps3/umps/arch.h>
 
 /* take T and N and return the n-th bit of T */
-
-#define DEVNUM 8
+#define ALDEV 50
 /* find nth bit of n */
 #define NBIT(T,N) ((T & (1 << N)) >> N) 
 /*CauseIP part of Cause register*/
@@ -18,24 +17,21 @@
 
 #define TERMSTATMASK 0xFF
 
+//temporaneo:
+extern int termSem;
+
 extern int readyPCB;
 
-extern int findDevice(int line,int* cmdAddr);
+extern int findDevice(int* cmdAddr);
 extern int processCount;
 extern int SBcount;
-//extern int deviceSem[ALDEV]; 
+extern int deviceSem[ALDEV]; 
 extern struct list_head readyQueue;
 extern pcb_t* currentProcess;
 extern void schedule();
 extern state_t* BIOSDPState;
 extern void waitForClock();
 extern int pseudoClockSem;
-
-extern int diskSem[DEVNUM];
-extern int flashSem[DEVNUM];
-extern int netSem[DEVNUM];
-extern int printerSem[DEVNUM];
-extern int termSem[(DEVNUM*2)];
 
 void P(int* sem);
 pcb_t* V(int* sem);
@@ -45,6 +41,7 @@ void resolveNonTerm(int line, int device);
 void ITInterrupt();
 void PLTinterrupt();
 
+int indexDevice;
 
 void interruptHandler(){
     /* line 0 not considered (NO multiprocessor) */
@@ -65,7 +62,7 @@ void interruptHandler(){
                 break;
             }
             /* n-th bit line resolved, so 1->0*/
-            //DISABLEINT(line);
+            DISABLEINT(line);
         }
     }
     /* return control to Current Process */
@@ -88,7 +85,7 @@ void nonTimerInterruptHandler(int interruptLine){
             deviceBitMap = (int *)CDEV_BITMAP_ADDR(IL_DISK);
             for (int bit=0;bit<8;bit++){
                 if (NBIT(*deviceBitMap,bit)==ON){
-                    resolveTerm(interruptLine,bit);     //NON TERM , da cambiare
+                    resolveTerm(interruptLine,bit);
                     *deviceBitMap &= (~(1<<bit));
                 }
             }
@@ -131,7 +128,7 @@ void nonTimerInterruptHandler(int interruptLine){
             nBit = 0;
             deviceBitMap = (int *)CDEV_BITMAP_ADDR(IL_TERMINAL);
             for (int bit=0;bit<8;bit++){
-                if (NBIT(*deviceBitMap,bit) == ON){
+                if (NBIT(*deviceBitMap,bit)==ON){
                     resolveTerm(interruptLine,bit);
                     *deviceBitMap &= (~(1<<bit));
                 }
@@ -141,13 +138,15 @@ void nonTimerInterruptHandler(int interruptLine){
 }
 
 void resolveTerm(int line, int device){
-    termreg_t* termReg = (termreg_t*)(DEV_REG_ADDR( line, device));
-    memaddr sem;
+    termreg_t* termReg = (DEV_REG_ADDR( line, device));
+    int sem;
+    indexDevice=-1;     //reinitialize indexDevice
     
-    if( termReg->transm_status > 1 && termReg->transm_status != BUSY ) {
+    if( termReg->transm_status >1 && termReg->transm_status != BUSY ) {
         unsigned int status = (termReg->transm_status) & TERMSTATMASK;
         termReg->transm_command = ACK ; 
-        sem = &(termSem[findDevice(IL_TERMINAL,((int)(termReg))+8)]);
+        indexDevice = findDevice(((int)termReg)+8);
+        sem = &deviceSem[indexDevice];
         /* V on trasm (sub) device */
         pcb_t* unlockedPCB = V((int*)sem);
         if (unlockedPCB != NULL){
@@ -155,12 +154,15 @@ void resolveTerm(int line, int device){
             (unlockedPCB->valueAddr)[0] = status;
             /* insert unlocked in ready queue*/
             insertProcQ(&readyQueue,unlockedPCB);
+            readyPCB++;
         }
     }
+    indexDevice = -1;
     if(termReg->recv_status >1 && termReg->recv_status != BUSY){
         unsigned int status = (termReg->recv_status)& TERMSTATMASK;
         termReg->recv_command = ACK;
-        sem = (&termSem[findDevice(IL_TERMINAL,((int)termReg))]);
+        indexDevice = findDevice((int)(termReg));
+        sem = &deviceSem[indexDevice];
         /* V on recv (sub) device */
         pcb_t* unlockedPCB = V((int*)sem);
         if (unlockedPCB != NULL){
@@ -168,6 +170,7 @@ void resolveTerm(int line, int device){
             (unlockedPCB->valueAddr)[0] = status;
             /* insert unlocked in ready queue*/
             insertProcQ(&readyQueue,unlockedPCB);
+            readyPCB++;
         }
     }  
 }
@@ -183,7 +186,7 @@ void resolveNonTerm(int line, int device){
     devReg->command = ACK;
 
     /* V on semaphore */
-    int* sem = printerSem[device]; // vedi operazione in DOIO, è identica
+    int* sem = deviceSem+findDevice((int)devReg); // vedi operazione in DOIO, è identica
     pcb_t* waitingPCB = headBlocked(sem);
     if (waitingPCB != NULL){
         /* unlock PCB */
@@ -197,11 +200,18 @@ void resolveNonTerm(int line, int device){
     
 }
 
+/*
+    SUS valori del semaforo non utilizzati.Note:
+    1. in P ha senso chiamare currentProcess (P chiamata in DOIO dal kernel).
+    2. in V non ha senso chiamare current (sarebbe totalmente un altro processo, qui siamo a livello kernel)
+    3. P sempre bloccante 3 non decrementa mai
+    4. V non è mai bloccante !!! (sus ma ha anche molto senso per i device (sincronizzazione))
+    5. valore in questo caso usato come conta!!!
+*/
 
 /* P on device semaphore */
 void P(int* sem){
-
-    if ((*sem) <= 0 ){
+    if (*sem <=0 ){
         insertBlocked(sem, currentProcess);
         SBcount++;
     }
@@ -227,9 +237,10 @@ void PLTinterrupt(){
     
     if(((getSTATUS() & STATUS_TE) >> STATUS_TE_BIT) == ON){
         DISABLEINT(1);
-        setTIMER(100000000);
+        setTIMER(50);
         currentProcess->p_s = (*BIOSDPState);
         insertProcQ(&readyQueue,currentProcess);
+        readyPCB++;
         schedule();
     }
 }
@@ -241,13 +252,12 @@ void ITInterrupt(){ //ogni 100 millisecondi
     while(headBlocked(&pseudoClockSem)!=NULL){
         insertProcQ(&readyQueue,removeBlocked(&pseudoClockSem));
         SBcount--;
+        readyPCB++;
     }   
     /* set pseudoClockSem to 0 */
     pseudoClockSem = 0;
-    /*
     if (currentProcess==NULL){
         schedule();
     }
-    */
     LDST(BIOSDPState);
 }

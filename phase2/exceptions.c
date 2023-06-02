@@ -8,8 +8,7 @@
 #include <umps3/umps/libumps.h>
 #include <umps3/umps/types.h>
 
-
-#define DEVNUM 8
+#define ALDEV 50
 extern int readyPCB;
 
 extern int processCount;
@@ -19,20 +18,21 @@ extern pcb_t* currentProcess;
 extern void schedule();
 extern void interruptHandler();
 extern int pseudoClockSem;
+extern int deviceSem[ALDEV];
 extern int pseudoClockSem;
 extern void P(int* sem); //dichiarato in interrupts.c
-
-extern int diskSem[DEVNUM];
-extern int flashSem[DEVNUM];
-extern int netSem[DEVNUM];
-extern int printerSem[DEVNUM];
-extern int termSem[(DEVNUM*2)];
-
+//temporaneo:
+extern int termSem;
 
 extern int processStartTime;
-
 state_t* BIOSDPState;
-HIDDEN int excTOD;
+int excTOD;
+
+//TODO list
+// prima di ogni schedule(), bisogna incrementare il TOD (sezione 3.8)
+
+// dichiaro le funzioni per non avere problemi nel make
+// si potranno togliere con la distinzione .h e .c
 
 void *memcpy(void *dest, const void *src, unsigned long n)
 {
@@ -62,7 +62,6 @@ int PID = 1;    /* 1 is the init process */
 
 void exceptionHandler(){
     if(currentProcess != NULL){updateCPUtime();}
-    BIOSDPState = NULL;
     STCK(excTOD);
     /* use processor state in BIOS Data Page */
     BIOSDPState = ((state_t *) BIOSDATAPAGE);
@@ -129,7 +128,6 @@ void syscallExcHandler(){
             BIOSDPState->reg_v0 = (int) DO_IO(
                 (memaddr)(BIOSDPState->reg_a1),
                 (BIOSDPState->reg_a2));
-                currentProcess->p_s = *BIOSDPState;
                 schedule();
             break;
         case GETTIME:
@@ -137,7 +135,6 @@ void syscallExcHandler(){
             break;
         case CLOCKWAIT:
             waitForClock();
-            currentProcess->p_s = *BIOSDPState;
             schedule();
             break;
         case GETSUPPORTPTR:
@@ -230,7 +227,6 @@ void terminateProcess(int pid){
 #endif
 
 
-//funzione per determianre se il semaforo appartiene ai device semaphore
 
 void terminateProcess(int pid){
     if( pid==0 || pid == currentProcess->p_pid ) {  /* Kills the current process and progeny */
@@ -255,8 +251,8 @@ void terminateProcess(int pid){
         if(proc->p_semAdd!=NULL){
             int *tmpSem = outBlocked(proc);
             /*the semaphore is incremente only if it is not a device one*/
-            if(!((termSem <= tmpSem && tmpSem <= termSem + (DEVNUM*2)) || tmpSem == &pseudoClockSem)){
-                if (headBlocked(tmpSem)==NULL){
+            if(!((deviceSem <= tmpSem && tmpSem <= deviceSem + ALDEV) || tmpSem == &pseudoClockSem)){ // *sizeof(int) dovrebbe essere implicito in C
+                if (headBlocked(tmpSem)==0){
                     *(tmpSem) = 1 - *(tmpSem);
                 }            
             }
@@ -316,76 +312,130 @@ bool Verhogen(int* sem){
         readyPCB++;
         return false;
     }
-
     else{
-        ++(*sem);
+        (*sem) = 1;
         return false;
     }
 }
 
+
+/* Effettua un’operazione di I/O. */
 int DO_IO(int *cmdAddr, int *cmdValues){
     currentProcess->valueAddr = cmdValues;
-
-    int line = findDevType(cmdAddr);
-    int device = findDevice(line,cmdAddr);
-    if (device < 0)  PANIC();
     
-    memaddr sem; 
+    /* 
+    I device si trovano a 
+        0x1000.0054 - 0x1000.0063 Line 3, Device 0 (Device Register)
+        0x1000.0064 - 0x1000.0073 Line 3, Device 1 (Device Register)
+        ...
+        0x1000.00C4 - 0x1000.00D3 Line 3, device 7 (Device Register)
 
-    switch (line){
-        case IL_DISK:
-            sem = &(diskSem[device]);
-            cmdAddr  = (dtpreg_t*)(cmdValues);
-            break;
-        case IL_FLASH:
-            sem = &(flashSem[device]);
-            cmdAddr  = (dtpreg_t*)(cmdValues);
-            break;
-        case IL_ETHERNET:
-            sem = &(netSem[device]);
-            cmdAddr  = (dtpreg_t*)(cmdValues);
-            break;
-        case IL_PRINTER:
-            sem = &(printerSem[device]);
-            cmdAddr  = (dtpreg_t*)(cmdValues);
-            break;
+        0x1000.00D4 - 0x1000.0153 Line 4, device 0-7 (Device Register)
+        0x1000.0154 - 0x1000.01D3 Line 5, device 0-7 (Device Register)
+        0x1000.01D4 - 0x1000.0253 Line 6, device 0-7 (Device Register)
+        0.1000.0254 - 0x1000.02D3 Line 7, device 0-7 (Device Register)
 
-        case IL_TERMINAL:
-            sem = &(termSem[device]);
+    Disk devices
+    Flash devices
+    Network Adapters
+    Printer devices
+    Terminal devices (receive & transmit)
 
-            termreg_t* terminal;
-            if ((memaddr)cmdAddr % 16 == 4){
-                terminal = cmdAddr;
-                terminal->recv_command = cmdValues[1]; 
-            }
-            else {
-                /* cmdAddr is the trasm  address, so the terminal is cmdAddress - 8*/
-                terminal = (memaddr)cmdAddr - 8;
-                terminal -> transm_command = cmdValues[1];
-            } 
+    Base + 0x4 è dove mettere il comando (non per il terminale)
 
-            
-            break;
+    Installed device bitmap ci dice a quali interrupt sono collegati i device
+    Interrupt device bitmap, come sopra ma dice quale interrupt è attivo
+    */
+
+    /*Find the device function*/
+    //int indexDevice = findDevice(cmdAddr);
+    //temporaneo:
+    int indexDevice=findDevice(cmdAddr);
+
+    /*Write command Values from command Address */
+        /*devreg.dtp.command oppure 
+        devreg.term.recv_command/devreg.term.transm_command*/
+
+    if (indexDevice<0){
+        return -1;
     }
-    P ((int*)sem);
+    else if (indexDevice < 34){
+        /*non-terminal*/
+        dtpreg_t* regdevice = (dtpreg_t*)(cmdValues);
+        cmdAddr = regdevice;
+    }
+    else {
+        /*terminal*/
+        termreg_t* terminal;
+        if ((unsigned int)cmdAddr % 16 == 4 ){
+            terminal = cmdAddr;
+            terminal->recv_command = cmdValues[1]; 
+        }
+        else {
+            /* cmdAddr is the trasm  address, so the terminal is cmdAddress - 8*/
+            terminal = (unsigned int)cmdAddr - 8;
+            terminal -> transm_command = cmdValues[1];
+        } 
+    }
+
+    
+    /*Block the process on that device */
+    int sem = (&deviceSem[indexDevice]);
+    currentProcess->p_s = *BIOSDPState;
+    P((int*)sem);
+/*  
+    At the completion of the I-O operation the device register values 
+    are copied back in the cmdValues array. The return value of this system 
+    call is 0 in case of success, -1 otherwise.
+    Dobbiamo ritornare qualcosa?
+*/
     return 0;
 }
 
-int findDevType(int *cmdAddr){
-    if (cmdAddr < (memaddr)DEV_REG_START || cmdAddr >= (memaddr) DEV_REG_END){
-            return -1;
+
+/* NON FUNGE */
+//si possono modificare le etichette ai semafori ma segnalo così cambiamo anche il resto :)
+int findDevice(int *cmdAddr){
+    /*
+    All Lines Devices:
+
+    0 -> PLT
+    1 -> Interval Timer
+    2...9 -> Disk Devices
+    10...17 -> Flash Devices
+    18...25 -> Network Devices
+    26...33 -> Printer Devices
+    34...41 -> Terminal Devices
+
+    DEV_IL_START = 3;
+    */
+
+    /* DEV_REG_ADDR ci restituisce l'indirizzo della linea IL_*, del device 0-N_DEV_PER_IL*/
+    int value = cmdAddr; //è la base
+    if (value < (memaddr)DEV_REG_START || value >= (memaddr) DEV_REG_END){
+        return -1;
     }
-    else
-        return (((int)cmdAddr - (int)DEV_REG_START) / 0x80) + 3;
+    else if (value >= (memaddr) DEV_REG_ADDR(IL_DISK, 0) && value < (memaddr)DEV_REG_ADDR(IL_DISK, N_DEV_PER_IL)){
+        /*disk device*/
+        return  ((128-(DEV_REG_ADDR(IL_DISK, N_DEV_PER_IL)-value))/16)+2; 
+    }
+    else if (value >= (memaddr)DEV_REG_ADDR(IL_FLASH, 0) && value < (memaddr) DEV_REG_ADDR(IL_FLASH, N_DEV_PER_IL)){
+        /*flash device*/
+        return  ((128-(DEV_REG_ADDR(IL_FLASH, N_DEV_PER_IL)-value))/16)+10;
+    }
+    else if (value >= (memaddr)DEV_REG_ADDR(IL_ETHERNET, 0) && value < (memaddr) DEV_REG_ADDR(IL_ETHERNET, N_DEV_PER_IL)){
+        /*network */
+        return  ((128-(DEV_REG_ADDR(IL_ETHERNET, N_DEV_PER_IL)-value))/16)+18;
+    }
+    else if (value >= (memaddr)DEV_REG_ADDR(IL_PRINTER, 0) && value < (memaddr) DEV_REG_ADDR(IL_PRINTER, N_DEV_PER_IL)){
+        /*Printer*/
+        return ((128-(DEV_REG_ADDR(IL_PRINTER, N_DEV_PER_IL)-value))/16)+26;
+    }
+    else if (value >= (memaddr)DEV_REG_ADDR(IL_TERMINAL, 0) && value < (memaddr) DEV_REG_ADDR(IL_TERMINAL, N_DEV_PER_IL)){
+        /*terminal*/
+        return ((128-(DEV_REG_ADDR(IL_TERMINAL, N_DEV_PER_IL)-value))/8)+34;
+    }
 }
-
-int findDevice(int line,int* cmdAddr){
-
-    return line == IL_TERMINAL ? (int)((int)cmdAddr - (int)DEV_REG_ADDR(line,0)) / 8 : (int)((int)cmdAddr - (int)DEV_REG_ADDR(line,0)) / 16; 
-}
-
-
-
 /*Restituisce il tempo di esecuzione (in microsecondi, quindi *1000?) del processo */
 cpu_t getTime(){
     return (currentProcess->p_time); /* v0 inizializzata dopo*/

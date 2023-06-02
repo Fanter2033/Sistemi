@@ -17,9 +17,10 @@ extern pcb_t* currentProcess;
 extern int processStartTime;
 
 void schedule(){
+    currentProcess = NULL;
     if (emptyProcQ(&readyQueue)){
         if (processCount==0)                         /* case 1: nothing else to do */
-            HALT();                          
+            HALT();                                 
         else if (processCount > 0 && SBcount > 0) {  /* case 2: waiting for some I/O interrupt */
             /* NO current Process */
             currentProcess=NULL;
@@ -31,7 +32,7 @@ void schedule(){
             PANIC();
     }
     currentProcess = removeProcQ(&readyQueue);       /* readyQueue is not empty */
-
+    readyPCB--;
     setTIMER(TIMESLICE);
     STCK(processStartTime);
 
