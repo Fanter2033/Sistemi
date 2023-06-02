@@ -60,27 +60,32 @@ pcb_t* removeBlocked(int *semAdd){
 
 pcb_t* outBlocked(pcb_t* p){
     semd_t* iterator;
-    struct hlist_node* tmp=NULL;
     pcb_t* pcbToReturn = NULL;
+    int  bkt;
 
-    hash_for_each_possible_safe(semd_h,iterator,tmp,s_link,(u32)(p->p_semAdd)){
-        pcbToReturn = outProcQ(&iterator->s_procq,p);
-        pcbToReturn->p_semAdd = NULL;
+    hash_for_each(semd_h,bkt,iterator,s_link){
+        if (iterator -> s_key == p -> p_semAdd){
+            pcbToReturn = outProcQ(&iterator->s_procq,p);
+            pcbToReturn->p_semAdd = NULL;
 
-        removeEmptySemd(iterator);
+            removeEmptySemd(iterator);
+            return pcbToReturn;
+        }
     }
     /* pcbToReturn is NULL when the semaphore's key isn't in hash*/
-    return pcbToReturn;
+    return NULL;
 }
 
 pcb_t* headBlocked(int *semAdd){
-    pcb_t* pcbToReturn = NULL;
     semd_t* iterator;
-    hash_for_each_possible(semd_h,iterator,s_link,(u32)semAdd){
-        pcbToReturn=headProcQ(&iterator->s_procq);
+    int bkt;
+    hash_for_each(semd_h,bkt,iterator,s_link){
+        if (iterator -> s_key == semAdd){
+            return headProcQ(&iterator->s_procq);
+        }
     }
     /* pcbToReturn is NULL when the semaphore's key isn't in hash*/
-    return pcbToReturn;
+    return NULL;
 }
 
 void initASH(){
