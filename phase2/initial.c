@@ -1,45 +1,4 @@
-#include "pcb.h"
-#include "ns.h"
-#include "ash.h"
-#include "list.h"
-#include <pandos_const.h>
-#include <pandos_types.h>
-#include <umps3/umps/libumps.h>
-#include <umps3/umps/cp0.h>
-
-#define ALDEV 50  
-
-/*
-    All Lines Devices:
-
-    0 -> PLT
-    1 -> Interval Timer      //Those two aren't needed
-    2...9 -> Disk Devices
-    10...17 -> Flash Devices
-    18...25 -> Network Devices
-    26...33 -> Printer Devices
-    34...49 -> Terminal Devices:
-        34 35   Terminal 1 Recv,Trasm
-        36 37   Terminal 2 R,T
-        ...
-        48 49   Terminal 7 R,T 
-
-*/
-
-int processCount;   /* processes started but not yet terminated */
-int SBcount;    /* soft-blocked processes (blocked on deviceSem or pseudoClockSemaphore) */
-pcb_t* currentProcess;  /* pcb that is in running state */
-struct list_head readyQueue;  /* queue of ready pcb */
-int deviceSem[ALDEV];       /* array of device semaphores */
-int pseudoClockSem;
-int processStartTime;
-
-HIDDEN passupvector_t* passUpCP0;
-
-extern void test();
-extern void uTLB_RefillHandler();
-extern void exceptionHandler();
-extern void schedule();
+#include "initial.h"
 
 int main(){
 
@@ -75,13 +34,13 @@ int main(){
     processCount++;
     init->p_time=0;
     init->p_supportStruct=NULL;
-    init->p_pid = 1;
+    init->p_pid = PID;
     init->valueAddr = NULL;
     /* semADD and Process Tree fields initializated in allocPcb() */
     
     /* set the firstProcess status: 
         IEp - Interrupt Enabled, 
-        KUp - Kernel Mode on -> KUp = 0, 
+        KUp - Kernel Mode on (0), 
         IM - Interrupt Mask all set to 1 , 
         TE - processor Local Timer enabled */
     init-> p_s.status =  (ALLOFF | (IEPON | IMON | TEBITON)) ;

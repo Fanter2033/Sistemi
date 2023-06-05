@@ -1,61 +1,7 @@
-#include "pcb.h"
-#include "ns.h"
-#include "ash.h"
-#include <pandos_const.h>
-#include <pandos_types.h>
-#include <umps3/umps/cp0.h>
-#include <umps3/umps/arch.h>
-#include <umps3/umps/libumps.h>
-#include <umps3/umps/types.h>
-
-#define ALDEV 50
-
-extern int processCount;
-extern int SBcount;
-extern struct list_head readyQueue;
-extern pcb_t* currentProcess;
-extern void schedule();
-extern void interruptHandler();
-extern int pseudoClockSem;
-extern int deviceSem[ALDEV];
-extern int pseudoClockSem;
-extern void P(int* sem);
-extern int processStartTime;
-
-state_t* BIOSDPState;
-int excTOD;
-
-void *memcpy(void *dest, const void *src, unsigned long n)
-{
-    for (unsigned long i = 0; i < n; i++)
-    {
-        ((char*)dest)[i] = ((char*)src)[i];
-    }
-}
-
-pcb_t* findPCBfromQUEUE(int pid, struct list_head* head );
-pcb_t* findPCB_pid(int pid, struct list_head* queue);
-int createProcess(state_t *statep, support_t *supportp, nsd_t *ns);
-void terminateProcess(int pid);
-bool Passeren(int *sem);
-bool Verhogen(int *sem);
-int DO_IO(int *cmdAddr, int *cmdValues);
-cpu_t getTime();
-void waitForClock();
-support_t* getSupportData();
-int getProcessID(int parent);
-int getChildren(int *children, int size);
-int findLine(int* cmdAddr);
-int findDevice(int line, int* cmdAddr); 
-void syscallExcHandler();
-void exceptionHandler();
-
-int PID = 1;    /* init process has pid: 1 */
-
+#include "exceptions.h"
 
 void exceptionHandler(){
     if(currentProcess != NULL){updateCPUtime();}
-    STCK(excTOD);
     /* use processor state in BIOS Data Page */
     BIOSDPState = ((state_t *) BIOSDATAPAGE);
     unsigned int excCode = CAUSE_GET_EXCCODE(BIOSDPState->cause);
@@ -101,7 +47,7 @@ void syscallExcHandler(){
             break;
         case TERMPROCESS:
             terminateProcess(BIOSDPState->reg_a1);
-            if (BIOSDPState->reg_a1 == 0 || BIOSDPState->reg_a1 == currentProcess -> p_pid)
+            if (BIOSDPState->reg_a1 == 0 || BIOSDPState->reg_a1 == currentProcess -> p_pid) //Il secondo controllo è inutile, il currentProcess è NULL qui
                 schedule();
             break;
         case PASSEREN:
@@ -140,7 +86,7 @@ void syscallExcHandler(){
                 (int*)(BIOSDPState->reg_a1),
                 ((int)(BIOSDPState->reg_a1)));
             break;
-        case 11: case 12: case 13: case 14: case 15: case 16: case 17: case 18: case 19: case 20:
+        default: 
             passUporDie(GENERALEXCEPT);
             break;
         }   
@@ -427,4 +373,12 @@ void updateCPUtime(){
     unsigned int tod;
     STCK(tod);
     currentProcess->p_time += (cpu_t)(tod - processStartTime);
+}
+
+void *memcpy(void *dest, const void *src, unsigned long n)
+{
+    for (unsigned long i = 0; i < n; i++)
+    {
+        ((char*)dest)[i] = ((char*)src)[i];
+    }
 }

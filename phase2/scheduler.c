@@ -1,16 +1,4 @@
-#include "pcb.h"
-#include "ns.h"
-#include "ash.h"
-#include <pandos_const.h>
-#include <pandos_types.h>
-#include <umps3/umps/libumps.h>
-#include <umps3/umps/cp0.h>
-
-extern int processCount;
-extern int SBcount;
-extern struct list_head readyQueue;
-extern pcb_t* currentProcess;
-extern int processStartTime;
+#include "scheduler.h"
 
 void schedule(){
     currentProcess = NULL;
@@ -25,8 +13,8 @@ void schedule(){
         else if (processCount > 0 && SBcount == 0)  /* case 3: deadlock found */
             PANIC();
     }
-    currentProcess = removeProcQ(&readyQueue);       /* readyQueue is not empty */
-    setTIMER(TIMESLICE);
-    STCK(processStartTime);
-    LDST(&(currentProcess->p_s));
+    currentProcess = removeProcQ(&readyQueue);      /* readyQueue is not empty */
+    setTIMER(TIMESLICE);                            /* set the processor's local timer */
+    STCK(processStartTime);                         /* set the starting time of the currentProcess */
+    LDST(&(currentProcess->p_s));                   /* load the current process for execution */
 }

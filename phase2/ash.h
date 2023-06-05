@@ -1,13 +1,8 @@
 #ifndef ASH_H
 #define ASH_H
 
-
-#include "pandos_types.h"
-#include "pandos_const.h"
-#include "hashtable.h"
 #include "pcb.h"
-
-
+#include "hashtable.h"
 
 /* additional function: if the semaphore's list of proc. is empty removes it from the ash*/
 void removeEmptySemd(semd_t* s);

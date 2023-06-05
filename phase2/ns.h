@@ -1,8 +1,6 @@
 #ifndef NS_H
 #define NS_H
 
-#include "pandos_types.h"
-#include "pandos_const.h"
 #include "pcb.h"
 
 /* Initialize all free namespaces lists */

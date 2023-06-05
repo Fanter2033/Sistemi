@@ -114,3 +114,18 @@ p8 ROOT che riparte da DOPO la syscall (DOVREBBE ESSERE BLOCCATO !!!)
 
 /////// 05_06_2023 /////////////////
 FINITO, ora tocca migliorare il codice. Ognuno può fare una parte, tocca organizzarsi
+
+////// 05_06_2023 /////////////////
+
+Aggiunto i file .h e sistemato nontimerinterrupt e altre cose minime
+
+Per gli header l'ordine che ho seguito per le dichiarazioni è:
+- #include
+- #define
+- extern
+- definizione variabii globali
+- definizione funzioni
+
+Ho aggiunto anche tutti i commenti alle funzioni, ho lasciato fuori main, schedule, exceptionhandler e 
+interrupthandler per le quali non mi sembra serva (o abbia senso)un commento generale, 
+ma penso basti scrivere passo passo cosa fanno nelle funzioni stesse.
