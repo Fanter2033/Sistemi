@@ -1,6 +1,6 @@
 #include "pcb.h"
 
-/* pcbFree_h - pcb that are free or not used */
+/* List of free or unused PCB */
 HIDDEN LIST_HEAD(pcbFree_h);
 
 void initPcbs(){
@@ -14,7 +14,7 @@ void freePcb(pcb_t* p){
 }
 
 pcb_t* allocPcb(){
-    if (list_empty(&pcbFree_h)) return NULL;  //case1: there is no more PCB available
+    if (list_empty(&pcbFree_h)) return NULL;  //case1: No PCB available
 
     /*case2: take first PCB from pcbFree_h*/
 

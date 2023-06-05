@@ -7,43 +7,31 @@
 #include <umps3/umps/libumps.h>
 #include <umps3/umps/cp0.h>
 
-#define NBIT(T,N) ((T & (1 << N)) >> N) 
-#define DEVNUM 8
+#define ALDEV 50  
 
 /*
     All Lines Devices:
 
     0 -> PLT
-    1 -> Interval Timer
+    1 -> Interval Timer      //Those two aren't needed
     2...9 -> Disk Devices
     10...17 -> Flash Devices
     18...25 -> Network Devices
     26...33 -> Printer Devices
-    //in 3.1, ultimo punto dice di avere un semaforo per ogni sub-device
-    //8 terminal -> 16 sub-device
     34...49 -> Terminal Devices:
-        34 .. 41 -> Terminal - (W)
-        42 .. 49 -> Terminal - (R)
+        34 35   Terminal 1 Recv,Trasm
+        36 37   Terminal 2 R,T
+        ...
+        48 49   Terminal 7 R,T 
 
 */
-int readyPCB;
 
-int processCount;   /*process started but not yet terminated */
-int SBcount;    /* soft-blocked count */
+int processCount;   /* processes started but not yet terminated */
+int SBcount;    /* soft-blocked processes (blocked on deviceSem or pseudoClockSemaphore) */
 pcb_t* currentProcess;  /* pcb that is in running state */
 struct list_head readyQueue;  /* queue of ready pcb */
-
-//int deviceSem[ALDEV]; 
-int intervalTimerSem;
-int diskSem[DEVNUM];
-int flashSem[DEVNUM];
-int netSem[DEVNUM];
-int printerSem[DEVNUM];
-int termSem[(DEVNUM*2)];
-
-
+int deviceSem[ALDEV];       /* array of device semaphores */
 int pseudoClockSem;
-
 int processStartTime;
 
 HIDDEN passupvector_t* passUpCP0;
@@ -69,28 +57,21 @@ int main(){
     initNamespaces();
 
     /* nucleus variables initialization */
-    readyPCB=0;
     processCount=0;
     SBcount=0;
     mkEmptyProcQ(&readyQueue); 
     currentProcess=NULL;
-    for (int i=0;i<8;i++){
-        //deviceSem[i]=0;
-        flashSem[i] = 0;
-        netSem[i] = 0;
-        printerSem[i] = 0;
-        termSem[i] = 0;
-        termSem[i+8] = 0;
+    for (int i=0;i<ALDEV;i++){
+        deviceSem[i]=0;
     }
     pseudoClockSem=0;
 
     /* set Interval Timer to 100 ms */
     LDIT(PSECOND);
 
-    /* First Process initialization */
+    /* first Process initialization */
     pcb_t* init = allocPcb();
     insertProcQ(&readyQueue,init);
-    readyPCB++;
     processCount++;
     init->p_time=0;
     init->p_supportStruct=NULL;
@@ -98,11 +79,11 @@ int main(){
     init->valueAddr = NULL;
     /* semADD and Process Tree fields initializated in allocPcb() */
     
-    /* set the init' status: 
-    IEp - Interrupt Enabled, 
-    KUp - Kernel Mode on -> KUp = 0, 
-    IM - Interrupt Mask all set to 1 , 
-    TE - processor Local Timer enabled */
+    /* set the firstProcess status: 
+        IEp - Interrupt Enabled, 
+        KUp - Kernel Mode on -> KUp = 0, 
+        IM - Interrupt Mask all set to 1 , 
+        TE - processor Local Timer enabled */
     init-> p_s.status =  (ALLOFF | (IEPON | IMON | TEBITON)) ;
 
     /* set PC to the address of test (assign in t9 reg for tecnical reason) */
