@@ -110,3 +110,7 @@ entra nello scheduler che sceglie un processo:
 p8 ROOT che riparte da DOPO la syscall (DOVREBBE ESSERE BLOCCATO !!!)
     SUS -> Passeren fa la insertblocked!! (chi minchia lo sblocca?)
     Non c'è nessun comando di sblocco da nessuno (facendo trace del semaforo su cui è bloccato non viene più utilizzato).
+
+
+/////// 05_06_2023 /////////////////
+FINITO, ora tocca migliorare il codice. Ognuno può fare una parte, tocca organizzarsi
