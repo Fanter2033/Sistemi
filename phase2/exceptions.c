@@ -138,7 +138,7 @@ void syscallExcHandler(){
         case GETCHILDREN:
             BIOSDPState->reg_v0 = (int) getChildren(
                 (int*)(BIOSDPState->reg_a1),
-                (*((int*)(BIOSDPState->reg_a1))));
+                ((int)(BIOSDPState->reg_a1)));
             break;
         case 11: case 12: case 13: case 14: case 15: case 16: case 17: case 18: case 19: case 20:
             passUporDie(GENERALEXCEPT);
@@ -383,18 +383,24 @@ int getProcessID(int parent){
     else return currentProcess->p_pid;
 }
 
+
+
 /* Returns the number of children within the same namespace */
 int getChildren(int* children, int size){
     int valueToReturn = 0;
-    pcb_t* firstChild = list_first_entry(&currentProcess->p_child,struct pcb_t,p_child);
-    
     if (!emptyChild(currentProcess)){                            /* check if pcb has children*/
+        pcb_t* firstChild = list_first_entry(&currentProcess->p_child,struct pcb_t,p_child);
         nsd_t* currentNs = getNamespace(currentProcess, NS_PID);
+        if (currentNs == getNamespace(firstChild, NS_PID)){   
+            if (valueToReturn < size)
+                *(children + valueToReturn) = firstChild->p_pid; //controllo se il primo figlio è da inserire 
+            valueToReturn ++;
+        }
+
         struct pcb_t* iterator = NULL;
-        
         list_for_each_entry(iterator,&firstChild->p_sib,p_sib){
             if (currentNs == getNamespace(iterator, NS_PID)){   
-                if (size < valueToReturn)
+                if (valueToReturn < size)
                     *(children + valueToReturn) = iterator->p_pid; /* Finchè riesco assegno alla cella contigua dell'array il pid del processo figlio */ 
                 valueToReturn ++;
             }

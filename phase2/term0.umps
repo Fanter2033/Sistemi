@@ -1,0 +1,68 @@
+p1 v(sem_testsem)
+p2 was started
+p2 starts
+p2 v's successfully
+p2 is OK
+p3 is started
+p3 - CLOCKWAIT OK
+p3 - CPU time correctly maintained
+hp_p1 starts
+hp_p2 starts
+first incarnation of p4 starts
+p5 starts
+p6 starts
+p7 starts
+p9 starts
+second incarnation of p4 starts
+Bus Error (as expected): Access non-existent memory
+p10 starts
+p4 incarnation terminating
+memory management trap
+Correct Support Structure Address
+Address Error (as expected): non-kuseg access w/KU=1
+High level SYS call from kernel mode process
+p1 knows p5 ended
+p8root starts
+child1 starts
+child2 starts
+leaf process (1) starts
+leaf process (2) starts
+leaf process (3) starts
+leaf process (4) starts
+p8root starts
+child1 starts
+child2 starts
+leaf process (1) starts
+leaf process (2) starts
+leaf process (3) starts
+leaf process (4) starts
+p8root starts
+child1 starts
+child2 starts
+leaf process (1) starts
+leaf process (2) starts
+leaf process (3) starts
+leaf process (4) starts
+p8root starts
+child1 starts
+child2 starts
+leaf process (1) starts
+leaf process (2) starts
+leaf process (3) starts
+leaf process (4) starts
+p11 starts
+ns pid in parent namespace
+ns pid in parent namespace
+ns pid not in parent namespace
+ns pid not in parent namespace
+p11, waiting for children
+Locking parent ns
+Locking parent ns
+Locking child ns
+Locking child ns
+Unlocked parent ns
+Unlocked parent ns
+Unlocked child ns
+Unlocked child ns
+p1 finishes OK -- TTFN
+System halted 
