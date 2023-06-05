@@ -1,9 +1,9 @@
 #ifndef PCB_H
 #define PCB_H
 
-#include "pandos_types.h"
-#include "pandos_const.h"
-#include "list.h"
+#include "../h/pandos_types.h"
+#include "../h/pandos_const.h"
+#include "../h/list.h"
 
 /* initialize the pcbFree list */
 void initPcbs();

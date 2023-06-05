@@ -1,5 +1,5 @@
-#include "ns.h"
-#include "ash.h"
+#include <ns.h>
+#include <ash.h>
 #include <umps3/umps/cp0.h>
 #include <umps3/umps/arch.h>
 #include <umps3/umps/libumps.h>

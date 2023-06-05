@@ -16,12 +16,13 @@ endif
 
 UMPS3_DATA_DIR = $(UMPS3_DIR_PREFIX)/share/umps3
 UMPS3_INCLUDE_DIR = $(UMPS3_DIR_PREFIX)/include/umps3
-UMPS3_TYPE_DIR = ./
+UMPS3_TYPE_DIR = ./h/
+UMPS3_PHASE1_DIR = ./phase1/
 
 # Compiler options
 CFLAGS_LANG = -ffreestanding -ansi
 CFLAGS_MIPS = -mips1 -mabi=32 -mno-gpopt -EL -G 0 -mno-abicalls -fno-pic -mfp32 -Wall
-CFLAGS = $(CFLAGS_LANG) $(CFLAGS_MIPS) -I$(UMPS3_INCLUDE_DIR) -I$(UMPS3_TYPE_DIR) -O0 -std=gnu99
+CFLAGS = $(CFLAGS_LANG) $(CFLAGS_MIPS) -I$(UMPS3_INCLUDE_DIR) -I$(UMPS3_TYPE_DIR) -I$(UMPS3_PHASE1_DIR) -O0 -std=gnu99
 
 # Linker options
 LDFLAGS = -G 0 -T $(UMPS3_DATA_DIR)/umpscore.ldscript -m elf32ltsmip
@@ -31,12 +32,12 @@ VPATH = $(UMPS3_DATA_DIR)
 
 .PHONY : all clean
 
-all : kernel.core.umps
+all : ./kernel/kernel.core.umps
 
-kernel.core.umps : kernel
+./kernel/kernel.core.umps : ./kernel/kernel
 	umps3-elf2umps -k $<
 
-kernel : initial.o scheduler.o exceptions.o interrupts.o p2test.04.o pcb.o ash.o ns.o crtso.o libumps.o
+./kernel/kernel : initial.o scheduler.o exceptions.o interrupts.o p2test.04.o ./phase1/pcb.o ./phase1/ash.o ./phase1/ns.o crtso.o libumps.o
 	$(LD) -o $@ $^ $(LDFLAGS)
 
 clean :

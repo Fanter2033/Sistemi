@@ -2,7 +2,7 @@
 #define ASH_H
 
 #include "pcb.h"
-#include "hashtable.h"
+#include "../h/hashtable.h"
 
 /* additional function: if the semaphore's list of proc. is empty removes it from the ash*/
 void removeEmptySemd(semd_t* s);

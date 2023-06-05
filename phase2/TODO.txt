@@ -129,3 +129,10 @@ Per gli header l'ordine che ho seguito per le dichiarazioni è:
 Ho aggiunto anche tutti i commenti alle funzioni, ho lasciato fuori main, schedule, exceptionhandler e 
 interrupthandler per le quali non mi sembra serva (o abbia senso)un commento generale, 
 ma penso basti scrivere passo passo cosa fanno nelle funzioni stesse.
+
+fatta la divisione e sistemato il makefile
+
+manca:
+- creazione readme (con scelte progettuali)
+- creazione di un file .h (utils.h?) contenente tutte le dichiarazioni delle variabili utilizzate in tutti i moduli (readyQueue,SBcount ...)
+- riscrivere alcune funzioni

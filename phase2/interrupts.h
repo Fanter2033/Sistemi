@@ -1,5 +1,5 @@
-#include "ns.h"
-#include "ash.h"
+#include <ns.h>
+#include <ash.h>
 #include <umps3/umps/cp0.h>
 #include <umps3/umps/libumps.h>
 #include <umps3/umps/arch.h>
@@ -56,5 +56,5 @@ void resolveNonTerm(int line, int device);
 /* Performs a P on device semaphore at sem */
 void P(int* sem);
 
-/* Performs a P on device semaphore at sem */
+/* Performs a V on device semaphore at sem */
 pcb_t* V(int* sem);
