@@ -1,10 +1,7 @@
-#include <ns.h>
-#include <ash.h>
-#include <umps3/umps/cp0.h>
-#include <umps3/umps/libumps.h>
-#include <umps3/umps/arch.h>
+#ifndef INTERRUPTS_H
+#define INTERRUPTS_H
 
-#define ALDEV 50
+#include <utils.h>
 
 /* Takes T and N and return the n-th bit of T */
 #define NBIT(T,N) ((T & (1 << N)) >> N) 
@@ -14,20 +11,6 @@
 
 /* Hardware constant */
 #define TERMSTATMASK 0xFF
-
-/* ---- Extern Variables ---- */
-
-extern int processCount;
-extern int SBcount;
-extern int deviceSem[ALDEV]; 
-extern struct list_head readyQueue;
-extern pcb_t* currentProcess;
-extern int pseudoClockSem;
-extern state_t* BIOSDPState;
-
-/* ---- Extern Functions ---- */
-
-extern void schedule();
 
 /* ---- Functions Declaration ---- */
 
@@ -58,3 +41,5 @@ void P(int* sem);
 
 /* Performs a V on device semaphore at sem */
 pcb_t* V(int* sem);
+
+#endif

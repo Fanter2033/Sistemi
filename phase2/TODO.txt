@@ -136,3 +136,13 @@ manca:
 - creazione readme (con scelte progettuali)
 - creazione di un file .h (utils.h?) contenente tutte le dichiarazioni delle variabili utilizzate in tutti i moduli (readyQueue,SBcount ...)
 - riscrivere alcune funzioni
+
+////// 06_06_2023 /////////////////
+
+Creato utils.h e inserito nella cartella "h", modificato il makefile per far funzionare clean
+modificate findDevice e findLine per avere meno numeri assoluti (possono diventare macro?)
+Gli ALDEV sono ora 48
+
+Manca:
+- creazione readme (con scelte progettuali)
+. riscrittura funzioni (+ eventuali commenti)

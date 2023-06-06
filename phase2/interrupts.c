@@ -3,7 +3,7 @@
 void interruptHandler(){
     /* line 0 not considered (NO multiprocessor) */
     /* check goes from most significant bit to lower, so the priority is considered */
-    for (int line=1; line<8;line++){
+    for (int line=1; line<N_IL;line++){
         if (NBIT(CAUSEIP,line) == ON){     //INTERRUPT LINE ON
             switch (line){
             case IL_CPUTIMER:
@@ -53,7 +53,7 @@ void resolveTerm(int line, int device){
     if( termReg->transm_status >1 && termReg->transm_status != BUSY ) {
         unsigned int status = (termReg->transm_status) & TERMSTATMASK;
         termReg->transm_command = ACK ;
-        indexDevice = ((line-3)*8)+2+ (2*device) + 1 ;
+        indexDevice = (EXT_IL_INDEX(line)*DEVPERINT)+(2*device) + 1 ;
         sem = &deviceSem[indexDevice];
         /* V on trasm (sub) device */
         pcb_t* unlockedPCB = V((int*)sem);
@@ -68,7 +68,7 @@ void resolveTerm(int line, int device){
     if(termReg->recv_status >1 && termReg->recv_status != BUSY){
         unsigned int status = (termReg->recv_status)& TERMSTATMASK;
         termReg->recv_command = ACK;
-        indexDevice = ((line-3)*8)+2+ (2*device);
+        indexDevice = (EXT_IL_INDEX(line)*DEVPERINT)+(2*device);
         sem = &deviceSem[indexDevice];
         /* V on recv (sub) device */
         pcb_t* unlockedPCB = V((int*)sem);
@@ -93,7 +93,7 @@ void resolveNonTerm(int line, int device){
         unsigned int status = devReg -> status;
         /* ACK the interrupt */
         devReg->command = ACK;
-        indexDevice = ((line-3)*8)+2+device;
+        indexDevice = ((EXT_IL_INDEX(line))*DEVPERINT)+ device;
         sem = &deviceSem[indexDevice];
         /* V on semaphore */
         pcb_t* unlockedPCB = V((int*)sem);

@@ -1,28 +1,7 @@
-#include <ns.h>
-#include <ash.h>
-#include <umps3/umps/cp0.h>
-#include <umps3/umps/arch.h>
-#include <umps3/umps/libumps.h>
-#include <umps3/umps/types.h>
+#ifndef EXCEPTIONS_H
+#define EXCEPTIONS_H
 
-#define ALDEV 50
-
-/* ---- Extern Variables ---- */
-
-extern int processCount;
-extern int SBcount;
-extern pcb_t* currentProcess;
-extern struct list_head readyQueue;
-extern int deviceSem[ALDEV];
-extern int pseudoClockSem;
-extern int processStartTime;
-extern int PID;
-
-/* ---- Extern Functions ---- */
-
-extern void schedule();
-extern void interruptHandler();
-extern void P(int* sem);
+#include <utils.h>
 
 /* ---- Global Variables ---- */
 
@@ -66,7 +45,7 @@ support_t* getSupportData();
     (it returns 0 if parent and child are not in the same namespace)*/
 int getProcessID(int parent);
 
-/* Returns the number of children in the same PID as the requesting process, furthermore
+/* Returns the number of children in the same PID ns as the requesting process, furthermore
  it loads the "children" array with the process' children until size "size" */
 int getChildren(int *children, int size);
 
@@ -87,3 +66,5 @@ void updateCPUtime();
 
 /* Additional function that copies n characters from memory area src to memory area dest */
 void *memcpy(void *dest, const void *src, unsigned long n);
+
+#endif

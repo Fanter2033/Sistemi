@@ -242,7 +242,7 @@ int DO_IO(int *cmdAddr, int *cmdValues){
     int line = findLine(cmdAddr);
     int device = findDevice(line,cmdAddr);
 
-    int indexDevice = ((line-3)*8)+2+device;
+    int indexDevice = (EXT_IL_INDEX(line)*DEVPERINT)+ device;
 
 
     /*Write command Values from command Address */
@@ -250,7 +250,7 @@ int DO_IO(int *cmdAddr, int *cmdValues){
     if (indexDevice<0){
         return -1;
     }
-    else if (indexDevice < 34){
+    else if (indexDevice < 32){
         /*Non-terminal*/
         dtpreg_t* regdevice = (dtpreg_t*)(cmdValues);
         cmdAddr = regdevice;
@@ -284,12 +284,12 @@ int findLine(int *cmdAddr){
             return -1;
     }
     else
-        return (((int)cmdAddr - (int)DEV_REG_START) / 0x80) + 3;
+        return (((int)cmdAddr - (int)DEV_REG_START) / (DEV_REG_SIZE*DEVPERINT)) + DEV_IL_START;
 
 }
 
 int findDevice(int line,int* cmdAddr){
-    return line == IL_TERMINAL ? (int)((int)cmdAddr - (int)DEV_REG_ADDR(line,0)) / 8 : (int)((int)cmdAddr - (int)DEV_REG_ADDR(line,0)) / 16; 
+    return line == IL_TERMINAL ? (int)((int)cmdAddr - (int)DEV_REG_ADDR(line,0)) / DEVPERINT : (int)((int)cmdAddr - (int)DEV_REG_ADDR(line,0)) / (DEVPERINT*2); 
 }
 
 

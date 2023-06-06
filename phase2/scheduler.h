@@ -1,15 +1,10 @@
-#include <pcb.h>
-#include <umps3/umps/libumps.h>
-#include <umps3/umps/cp0.h>
+#ifndef SCHEDULER_H
+#define SCHEDULER_H
 
-/* ---- Extern Variables ---- */
-
-extern int processCount;
-extern int SBcount;
-extern struct list_head readyQueue;
-extern pcb_t* currentProcess;
-extern int processStartTime;
+#include <utils.h>
 
 /* ---- Functions Declaration ---- */
 
 void schedule();
+
+#endif

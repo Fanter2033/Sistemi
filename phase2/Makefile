@@ -41,7 +41,7 @@ all : ./kernel/kernel.core.umps
 	$(LD) -o $@ $^ $(LDFLAGS)
 
 clean :
-	-rm -f *.o kernel kernel.*.umps
+	-rm -f *.o ./kernel/kernel ./kernel/kernel.*.umps ./phase1/*.o
 
 # Pattern rule for assembly modules
 %.o : %.S
