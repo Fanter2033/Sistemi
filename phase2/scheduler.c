@@ -7,7 +7,7 @@ void schedule(){
             HALT();                                 
         else if (processCount > 0 && SBcount > 0) {  /* case 2: waiting for some I/O interrupt */
             /* interrupts enabled, PLT disabled */  
-            setSTATUS( IECON | IMON & (~TEBITON) );
+            setSTATUS((IECON | IMON) & (~TEBITON) );
             WAIT();                           
         }
         else if (processCount > 0 && SBcount == 0)  /* case 3: deadlock found */

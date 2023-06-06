@@ -65,6 +65,6 @@ void passUporDie(int indexValue);
 void updateCPUtime();
 
 /* Additional function that copies n characters from memory area src to memory area dest */
-void *memcpy(void *dest, const void *src, unsigned long n);
+void memcpy(void *dest, const void *src, unsigned long n);
 
 #endif

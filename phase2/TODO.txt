@@ -145,4 +145,7 @@ Gli ALDEV sono ora 48
 
 Manca:
 - creazione readme (con scelte progettuali)
-. riscrittura funzioni (+ eventuali commenti)
+- riscrittura funzioni (+ eventuali commenti)
+
+Aggiunti diversi commenti ed eliminati diversi numeri assoluti
+Segnalo che a riga 157 in exceptions.c c'è un assegnamento da pcb_t* a int* che probabilmente rompe qualcosa

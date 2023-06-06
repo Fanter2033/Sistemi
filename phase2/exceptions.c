@@ -2,94 +2,96 @@
 
 void exceptionHandler(){
     if(currentProcess != NULL){updateCPUtime();}
-    /* use processor state in BIOS Data Page */
-    BIOSDPState = ((state_t *) BIOSDATAPAGE);
-    unsigned int excCode = CAUSE_GET_EXCCODE(BIOSDPState->cause);
+    BIOSDPState = ((state_t *) BIOSDATAPAGE);                       /* use processor state in BIOS Data Page */
+    unsigned int excCode = CAUSE_GET_EXCCODE(BIOSDPState->cause);   /* retrieve the exceptionCode */
 
-    if (excCode == 0){
-        interruptHandler();
+    switch(excCode){
+        case EXC_INT:         /* Interrupt */
+            interruptHandler();
+            break;
+        case EXC_MOD ... EXC_TLBS:   /* TLB exceptions */
+            passUporDie(PGFAULTEXCEPT);
+            break;
+        case EXC_SYS:         /* Syscall */
+            syscallExcHandler();
+            break;
+        default:        /* Program Traps */
+            passUporDie(GENERALEXCEPT);    
+            break;
     }
-    else if (excCode == 8){
-        syscallExcHandler();
-    }
-    else if (excCode < 4){  /*1-2-3*/
-        passUporDie(PGFAULTEXCEPT);
-    }
-    else{   /* 4-7 o 9-12 */
-        passUporDie(GENERALEXCEPT);
-    }
-    
 }
 
 void syscallExcHandler(){
+    BIOSDPState->pc_epc +=WORDLEN;                              /* increase PC to avoid loop on Syscall */
+    if (((getSTATUS() & STATUS_KUc)>>STATUS_KUc_BIT) == ON){    /* check if process is in Kernel Mode */
 
-    /* increase PC to avoid loop on Syscall */
-    BIOSDPState->pc_epc +=WORDLEN;
-    
-    /* check if process is in Kernel Mode */
-    if (((getSTATUS() & STATUS_KUc)) == 2 ){
-        /* set ExcCode to RI */
-        BIOSDPState->cause = ((EXC_RI << CAUSE_EXCCODE_BIT));
-        /* call Program Trap Handler */
-        passUporDie(GENERALEXCEPT);
+        BIOSDPState->cause = ((EXC_RI << CAUSE_EXCCODE_BIT));   /* set ExcCode to RI */
+        passUporDie(GENERALEXCEPT);                             /* call Program Trap Handler */
     }
-
     else {
-        /* switch on value in a0 register */
+        switch (BIOSDPState->reg_a0) {                          /* switch on value in a0 register */
 
-        switch (BIOSDPState->reg_a0) {
+          case CREATEPROCESS:
+              BIOSDPState->reg_v0 = (int) createProcess(
+                  (state_t*)(BIOSDPState->reg_a1),
+                  (support_t*)(BIOSDPState->reg_a2),
+                  (nsd_t*)(BIOSDPState->reg_a3));
+              break;
 
-        case CREATEPROCESS:
-            BIOSDPState->reg_v0 = (int) createProcess(
-                (state_t*)(BIOSDPState->reg_a1),
-                (support_t*)(BIOSDPState->reg_a2),
-                (nsd_t*)(BIOSDPState->reg_a3));
-            break;
-        case TERMPROCESS:
-            terminateProcess(BIOSDPState->reg_a1);
-            if (BIOSDPState->reg_a1 == 0 || BIOSDPState->reg_a1 == currentProcess -> p_pid) //Il secondo controllo è inutile, il currentProcess è NULL qui
-                schedule();
-            break;
-        case PASSEREN:
-            if (Passeren(BIOSDPState->reg_a1)){
-                currentProcess->p_s = *BIOSDPState;
-                schedule();
-            }
-            break;
-        case VERHOGEN:
-            if (Verhogen(BIOSDPState->reg_a1)){
-                currentProcess->p_s = *BIOSDPState;
-                schedule();
-            }
-            break;
-        case DOIO:
-            BIOSDPState->reg_v0 = (int) DO_IO(
-                (memaddr)(BIOSDPState->reg_a1),
-                (BIOSDPState->reg_a2));
-                schedule();
-            break;
-        case GETTIME:
-            BIOSDPState->reg_v0 = (int) getTime();
-            break;
-        case CLOCKWAIT:
-            waitForClock();
-            schedule();
-            break;
-        case GETSUPPORTPTR:
-            BIOSDPState->reg_v0 = (int) getSupportData();
-            break;
-        case GETPROCESSID:
-            BIOSDPState->reg_v0 = (int) getProcessID(BIOSDPState->reg_a1);
-            break;
-        case GETCHILDREN:
-            BIOSDPState->reg_v0 = (int) getChildren(
-                (int*)(BIOSDPState->reg_a1),
-                ((int)(BIOSDPState->reg_a1)));
-            break;
-        default: 
-            passUporDie(GENERALEXCEPT);
-            break;
-        }   
+          case TERMPROCESS:
+              terminateProcess((int)BIOSDPState->reg_a1);
+              if (BIOSDPState->reg_a1 == 0)
+                  schedule();
+              break;
+
+          case PASSEREN:
+              if (Passeren((int *)BIOSDPState->reg_a1)){
+                  currentProcess->p_s = *BIOSDPState;
+                  schedule();
+              }
+              break;
+
+          case VERHOGEN:
+              if (Verhogen((int *)BIOSDPState->reg_a1)){
+                  currentProcess->p_s = *BIOSDPState;
+                  schedule();
+              }
+              break;
+
+          case DOIO:
+              BIOSDPState->reg_v0 = (int) DO_IO(
+                  (int *)(BIOSDPState->reg_a1),
+                  (int *)(BIOSDPState->reg_a2));
+                  schedule();
+              break;
+
+          case GETTIME:
+              BIOSDPState->reg_v0 = (int) getTime();
+              break;
+
+          case CLOCKWAIT:
+              waitForClock();
+              schedule();
+              break;
+
+          case GETSUPPORTPTR:
+              BIOSDPState->reg_v0 = (int) getSupportData();
+              break;
+
+          case GETPROCESSID:
+              BIOSDPState->reg_v0 = (int) getProcessID((int)BIOSDPState->reg_a1);
+              break;
+
+          case GETCHILDREN:
+              BIOSDPState->reg_v0 = (int) getChildren(
+                  (int*)(BIOSDPState->reg_a1),
+                  (int)(BIOSDPState->reg_a2));
+              break;
+
+          default: /* Syscall 11 and above */
+              passUporDie(GENERALEXCEPT);
+              break;
+          }   
 
     /*if any syscall has blocked the process,the scheduler
      must've been invoked, so we shouldn't arrive here */
@@ -130,6 +132,7 @@ int createProcess(state_t *statep, support_t *supportp, nsd_t *ns){
     return PID;
 }
 
+
 void terminateProcess(int pid){
     if( pid==0 || pid == currentProcess->p_pid ) { /* kills the current process and progeny */
         outChild(currentProcess);
@@ -151,7 +154,7 @@ void terminateProcess(int pid){
         processCount--;
         /* the process is either blocked at a semaphore or on the ready queue*/
         if(proc->p_semAdd!=NULL){
-            int *tmpSem = outBlocked(proc);
+            int *tmpSem = outBlocked(proc); //Questo restituisce un pcb_t* non il semaforo!
             /*the semaphore is incremented only if it is not a soft blocking one*/
             if(!((deviceSem <= tmpSem && tmpSem <= deviceSem + ALDEV) || tmpSem == &pseudoClockSem)){ 
                 if (headBlocked(tmpSem)==0){
@@ -201,6 +204,7 @@ bool Passeren(int* sem){
     }
 }
 
+
 bool Verhogen(int* sem){
     if((*sem) == 1){    /* blocking */
         /* current process enters in block state*/
@@ -219,9 +223,8 @@ bool Verhogen(int* sem){
 }
 
 
-/* performs an input output operation*/
 int DO_IO(int *cmdAddr, int *cmdValues){
-    currentProcess->valueAddr = cmdValues;
+    currentProcess->valueAddr = (unsigned int *)cmdValues;
     
     /* 
     I device si trovano a:
@@ -236,51 +239,45 @@ int DO_IO(int *cmdAddr, int *cmdValues){
         0.1000.0254 - 0x1000.02D3 Line 7, device 0-7 (Device Register)
 
     Disk, Flash, Network, Printer, Terminal (receive & transmit)
-    Base + 0x4 è dove mettere il comando (non per il terminale)
     */
 
     int line = findLine(cmdAddr);
     int device = findDevice(line,cmdAddr);
-
     int indexDevice = (EXT_IL_INDEX(line)*DEVPERINT)+ device;
-
-
-    /*Write command Values from command Address */
 
     if (indexDevice<0){
         return -1;
     }
     else if (indexDevice < 32){
         /*Non-terminal*/
-        dtpreg_t* regdevice = (dtpreg_t*)(cmdValues);
-        cmdAddr = regdevice;
+        dtpreg_t* dev = (dtpreg_t*)(cmdAddr);
+        dev->command = cmdValues[1];
     }
     else {
         /*Terminal*/
         termreg_t* terminal;
-        if ((unsigned int)cmdAddr % 16 == 4 ){
-            terminal = cmdAddr;
+        if ((int)cmdAddr % DEV_REG_SIZE == DEV_REG_SIZE_W ){
+            terminal = (termreg_t*)cmdAddr;
             terminal->recv_command = cmdValues[1]; 
         }
         else {
             /* cmdAddr is the trasm address, so the terminal is cmdAddress - 8*/
-            terminal = (unsigned int)cmdAddr - 8;
+            terminal = (termreg_t*)((int)cmdAddr - (DEV_REG_SIZE/2));
             terminal -> transm_command = cmdValues[1];
         } 
     }
-
     
     /*Block the process on that device */
-    int sem = (&deviceSem[indexDevice]);
+    int *sem = &deviceSem[indexDevice];
     currentProcess->p_s = *BIOSDPState;
-    P((int*)sem);
+    P(sem);
 
     return 0;
 }
 
 
 int findLine(int *cmdAddr){
-    if (cmdAddr < (memaddr)DEV_REG_START || cmdAddr >= (memaddr) DEV_REG_END){
+    if ((int)cmdAddr < (memaddr)DEV_REG_START || (int)cmdAddr >= (memaddr) DEV_REG_END){
             return -1;
     }
     else
@@ -293,10 +290,10 @@ int findDevice(int line,int* cmdAddr){
 }
 
 
-/* returns the executing time of the process */
 cpu_t getTime(){
     return (currentProcess->p_time);
 }
+
 
 void waitForClock(){
     if(pseudoClockSem == 0){
@@ -310,12 +307,11 @@ void waitForClock(){
         pseudoClockSem -- ;
 }
 
+
 support_t* getSupportData(){
     return currentProcess->p_supportStruct;
 }
 
-/*returns the identifier of the invoking process if parent == 0, 
-  the invoking process' parent one otherwise */
 
 int getProcessID(int parent){
     /* type=0 is the PID namespace, currently using p_pid */
@@ -330,8 +326,6 @@ int getProcessID(int parent){
 }
 
 
-
-/* Returns the number of children within the same namespace */
 int getChildren(int* children, int size){
     int valueToReturn = 0;
     if (!emptyChild(currentProcess)){                            /* check if pcb has children*/
@@ -355,6 +349,7 @@ int getChildren(int* children, int size){
     return valueToReturn;
 }
 
+
 void passUporDie(int indexValue){
     if (currentProcess->p_supportStruct == NULL){
         /* Die part */
@@ -369,13 +364,15 @@ void passUporDie(int indexValue){
     }
 }
 
+
 void updateCPUtime(){
     unsigned int tod;
     STCK(tod);
     currentProcess->p_time += (cpu_t)(tod - processStartTime);
 }
 
-void *memcpy(void *dest, const void *src, unsigned long n)
+
+void memcpy(void *dest, const void *src, unsigned long n)
 {
     for (unsigned long i = 0; i < n; i++)
     {
