@@ -8,23 +8,21 @@
 #include <umps3/umps/libumps.h>
 #include <umps3/umps/types.h>
 
-#define ALDEV DEVICECNT+8  /* Number of (sub)devices semaphores */
+#define TERMSUB 2                   /* Sub device for terminal */
+#define ALDEV DEVICECNT+DEVINTNUM   /* Number of (sub)devices semaphores */
 
 /*
-    All Lines Devices:
-
-    Reworked to:
+    All Lines Devices [ALDEV] represents:
     0...7 -> Disk Devices
     8...15 -> Flash Devices
     16...23 -> Network Devices
     24...31 -> Printer Devices
     32...47 -> Terminal Devices:
         32 33 Terminal 0 Recv, Trasm
-        34 35 Terminal 1 R,T
         ...
         46 47 Terminal 7 R,T
-
 */
+
 
 /* ---- Extern Variables ---- */
 
@@ -46,7 +44,5 @@ extern void exceptionHandler();
 extern void schedule();
 extern void interruptHandler();
 extern void P(int* sem);
-
-
 
 #endif

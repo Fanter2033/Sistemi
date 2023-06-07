@@ -149,3 +149,15 @@ Manca:
 
 Aggiunti diversi commenti ed eliminati diversi numeri assoluti
 Segnalo che a riga 157 in exceptions.c c'è un assegnamento da pcb_t* a int* che probabilmente rompe qualcosa
+
+////// 07_06_2023 //////////////
+
+FINITO
+
+Chiedere se il pcb con il campo aggiunto è legal
+
+Readme:
+- Namespace con il for su tutti
+- Il +1 negli interrupt
+- Formula pazza
+- Memcopy

@@ -40,8 +40,6 @@ void syscallExcHandler(){
 
           case TERMPROCESS:
               terminateProcess((int)BIOSDPState->reg_a1);
-              if (BIOSDPState->reg_a1 == 0)
-                  schedule();
               break;
 
           case PASSEREN:
@@ -62,6 +60,7 @@ void syscallExcHandler(){
               BIOSDPState->reg_v0 = (int) DO_IO(
                   (int *)(BIOSDPState->reg_a1),
                   (int *)(BIOSDPState->reg_a2));
+                  currentProcess->p_s = *BIOSDPState;
                   schedule();
               break;
 
@@ -71,6 +70,7 @@ void syscallExcHandler(){
 
           case CLOCKWAIT:
               waitForClock();
+              currentProcess->p_s = *BIOSDPState;
               schedule();
               break;
 
@@ -102,88 +102,59 @@ void syscallExcHandler(){
 
 int createProcess(state_t *statep, support_t *supportp, nsd_t *ns){
     pcb_t* newProc = allocPcb();
-    /*no more free PCB to assign*/
-    if (newProc == NULL){ 
+    if (newProc == NULL) /* no PCB to assign */
         return 0;
-    } else {
-        PID++;
-        processCount++;
-        /* the new process is set to be the 
-        child of the current one and added to the readyQueue */
-        insertProcQ(&readyQueue, newProc);
-        insertChild(currentProcess, newProc); 
-        newProc->p_s = (*statep);
-        newProc->p_supportStruct = supportp;
-        newProc->p_time = 0;
-        newProc->p_semAdd = NULL;
-        newProc->p_pid = PID;
+    PID++;
+    processCount++;
 
-        /* if the namespace is null, it fails and enters */
-        if(!addNamespace(newProc, ns)){ 
-            /* this could be made by pointing the same structure as the father */
-            for(int i=0; i<NS_TYPE_MAX; i++){
-                /* gives the new process the parent's namespace */
-                nsd_t* tmpNs = getNamespace(currentProcess, i);
-                addNamespace(newProc, tmpNs); 
-            }
+    /* newProc variables initialization */
+    newProc->p_s = (*statep);  
+    newProc->p_supportStruct = supportp;
+    newProc->p_time = 0;
+    newProc->p_semAdd = NULL;
+    newProc->p_pid = PID;
+
+    /* new process is set as currentProcess' child and added to the readyQueue */
+    insertChild(currentProcess, newProc);
+    insertProcQ(&readyQueue, newProc);
+
+    /* if the ns passed is NULL, it fails and enters */
+    if(!addNamespace(newProc, ns)){
+        for(int i=0; i<NS_TYPE_MAX; i++){
+            /* gives the new process the parent's namespace */
+            nsd_t* tmpNs = getNamespace(currentProcess, i);
+            addNamespace(newProc, tmpNs);
         }
-        
     }
     return PID;
 }
 
-
 void terminateProcess(int pid){
-    if( pid==0 || pid == currentProcess->p_pid ) { /* kills the current process and progeny */
-        outChild(currentProcess);
-        processCount--;
-        while(!emptyChild(currentProcess)){
-            /* removeChild removes the first child and moves his first brother in its place:
-            it only exits the loop when all the siblings have been removed */
-            pcb_t* firstChild = list_first_entry(&currentProcess->p_child,struct pcb_t,p_child);
-            removeChild(currentProcess);
-            /*terminates the subtree of the first child*/
-            terminateProcess(firstChild->p_pid);
+    processCount--;                                                                   
+    pcb_t* proc = (pid==0||pid==currentProcess->p_pid)?currentProcess:findPCB_pid(pid,(&readyQueue));
+    outChild(proc);                                                                             /* the process is separated from its parent */    
+    if(proc->p_semAdd!=NULL){                                                                   /* Case 1: the process is blocked on a semaphore */
+        int * tmpSem = proc->p_semAdd;                                                          
+        pcb_t* tmpSet = outBlocked(proc);                                                       
+        if((deviceSem <= tmpSem && tmpSem <= deviceSem + ALDEV) || tmpSem == &pseudoClockSem){  /* softBlock Semaphore*/
+            SBcount--;                                                                             
         }
-        /*each pcb is freed in its recursive call*/
-        freePcb(currentProcess);
-        currentProcess=NULL;
-    } else {  /* kills the pointed process and progeny */
-        pcb_t* proc = findPCB_pid(pid, (&readyQueue));
-        outChild(proc);
-        processCount--;
-        /* the process is either blocked at a semaphore or on the ready queue*/
-        if(proc->p_semAdd!=NULL){
-            int *tmpSem = outBlocked(proc); //Questo restituisce un pcb_t* non il semaforo!
-            /*the semaphore is incremented only if it is not a soft blocking one*/
-            if(!((deviceSem <= tmpSem && tmpSem <= deviceSem + ALDEV) || tmpSem == &pseudoClockSem)){ 
-                if (headBlocked(tmpSem)==0){
-                    *(tmpSem) = 1 - *(tmpSem);
-                }            
-            }
-            else{
-                SBcount--;
-            }
-        } else { 
-            outProcQ(&readyQueue, proc);
+        else if (tmpSet==NULL){                                                                 /* non-SB semaphore */
+            *tmpSem = 1 - *tmpSem;                                                              /* the queue is empty so we adjust the value */
         }
-
-        while(!emptyChild(proc)){
-            /* removeChild removes the first child and moves his first brother in its place:
-            it only exits the loop when all the siblings have been removed */
-            pcb_t* firstChild = list_first_entry(&proc->p_child,struct pcb_t, p_child);
-            removeChild(proc);
-            /* terminates the subtree of the first child*/
-            terminateProcess(firstChild->p_pid);
-       }
-       freePcb(proc);
+    }else if (proc!=currentProcess){                                                            /* Case 2: process in readyQueue */
+        outProcQ(&readyQueue, proc);                                                            
     }
-    if (currentProcess==NULL){
+    while(!emptyChild(proc)){                                                                   /* recursively terminate every child (and its subtree) */
+        pcb_t* firstChild = list_first_entry(&proc->p_child,struct pcb_t,p_child);          
+        removeChild(proc);                                                                      /* remove the first child and eventually move the next one in its place */
+        terminateProcess(firstChild->p_pid);                                                
+    }
+    freePcb(proc);                                                                              /* finally delete the process */
+    if(currentProcess==proc){                                                                   /* no process to return control to */
         schedule();
-    }
-
-} 
-
+    }                                         
+}
 
 bool Passeren(int* sem){
 
@@ -224,52 +195,34 @@ bool Verhogen(int* sem){
 
 
 int DO_IO(int *cmdAddr, int *cmdValues){
+    /* save cmdValues */
     currentProcess->valueAddr = (unsigned int *)cmdValues;
-    
-    /* 
-    I device si trovano a:
-        0x1000.0054 - 0x1000.0063 Line 3, Device 0 (Device Register)
-        0x1000.0064 - 0x1000.0073 Line 3, Device 1 (Device Register)
-        ...
-        0x1000.00C4 - 0x1000.00D3 Line 3, device 7 (Device Register)
-
-        0x1000.00D4 - 0x1000.0153 Line 4, device 0-7 (Device Register)
-        0x1000.0154 - 0x1000.01D3 Line 5, device 0-7 (Device Register)
-        0x1000.01D4 - 0x1000.0253 Line 6, device 0-7 (Device Register)
-        0.1000.0254 - 0x1000.02D3 Line 7, device 0-7 (Device Register)
-
-    Disk, Flash, Network, Printer, Terminal (receive & transmit)
-    */
-
+    /* find the correct device for I/O from its address */
     int line = findLine(cmdAddr);
     int device = findDevice(line,cmdAddr);
     int indexDevice = (EXT_IL_INDEX(line)*DEVPERINT)+ device;
 
-    if (indexDevice<0){
+    if (indexDevice<0){ /* error case */
         return -1;
     }
-    else if (indexDevice < 32){
-        /*Non-terminal*/
+    else if (indexDevice < (DEVICECNT-DEVPERINT)){ /* non-terminal device */
         dtpreg_t* dev = (dtpreg_t*)(cmdAddr);
-        dev->command = cmdValues[1];
+        dev->command = cmdValues[COMMAND];
     }
-    else {
-        /*Terminal*/
+    else { /* terminal device */
         termreg_t* terminal;
-        if ((int)cmdAddr % DEV_REG_SIZE == DEV_REG_SIZE_W ){
+        if (indexDevice%2==0){ /* recv */
             terminal = (termreg_t*)cmdAddr;
-            terminal->recv_command = cmdValues[1]; 
+            terminal->recv_command = cmdValues[COMMAND]; 
         }
-        else {
-            /* cmdAddr is the trasm address, so the terminal is cmdAddress - 8*/
-            terminal = (termreg_t*)((int)cmdAddr - (DEV_REG_SIZE/2));
-            terminal -> transm_command = cmdValues[1];
+        else { /* transm */
+            terminal = (termreg_t*)((int)cmdAddr - (DEV_REG_SIZE/TERMSUB)); /* cmdAddr is the trasm address, so the terminal is cmdAddress - 8*/
+            terminal -> transm_command = cmdValues[COMMAND];
         } 
     }
-    
-    /*Block the process on that device */
+
+    /* block the process on that device */
     int *sem = &deviceSem[indexDevice];
-    currentProcess->p_s = *BIOSDPState;
     P(sem);
 
     return 0;
@@ -286,7 +239,7 @@ int findLine(int *cmdAddr){
 }
 
 int findDevice(int line,int* cmdAddr){
-    return line == IL_TERMINAL ? (int)((int)cmdAddr - (int)DEV_REG_ADDR(line,0)) / DEVPERINT : (int)((int)cmdAddr - (int)DEV_REG_ADDR(line,0)) / (DEVPERINT*2); 
+    return line == IL_TERMINAL ? (int)((int)cmdAddr - (int)DEV_REG_ADDR(line,0)) / DEVPERINT : (int)((int)cmdAddr - (int)DEV_REG_ADDR(line,0)) / (DEVPERINT*TERMSUB); 
 }
 
 
@@ -297,14 +250,9 @@ cpu_t getTime(){
 
 void waitForClock(){
     if(pseudoClockSem == 0){
-        /* Always block on Psuedo-clock sem */
-        currentProcess->p_s = *BIOSDPState;
-        /* current process enters in block state */
-        insertBlocked(&pseudoClockSem, currentProcess);
+        insertBlocked(&pseudoClockSem, currentProcess);  /* current process enters in block state */
         SBcount++;
     }
-    else 
-        pseudoClockSem -- ;
 }
 
 
@@ -314,7 +262,6 @@ support_t* getSupportData(){
 
 
 int getProcessID(int parent){
-    /* type=0 is the PID namespace, currently using p_pid */
     nsd_t* ns = getNamespace(currentProcess, NS_PID);
     if (parent){
         if (ns==getNamespace(currentProcess->p_parent,NS_PID)){
@@ -327,21 +274,21 @@ int getProcessID(int parent){
 
 
 int getChildren(int* children, int size){
-    int valueToReturn = 0;
-    if (!emptyChild(currentProcess)){                            /* check if pcb has children*/
-        pcb_t* firstChild = list_first_entry(&currentProcess->p_child,struct pcb_t,p_child);
-        nsd_t* currentNs = getNamespace(currentProcess, NS_PID);
-        if (currentNs == getNamespace(firstChild, NS_PID)){   
-            if (valueToReturn < size)
-                *(children + valueToReturn) = firstChild->p_pid; //controllo se il primo figlio è da inserire 
-            valueToReturn ++;
+    int valueToReturn = 0;                                                                      
+    if (!emptyChild(currentProcess)){                                                           /* check if pcb has children*/
+        pcb_t* firstChild = list_first_entry(&currentProcess->p_child,struct pcb_t,p_child);    
+        nsd_t* currentNs = getNamespace(currentProcess, NS_PID);                               
+        if (currentNs == getNamespace(firstChild, NS_PID)){                                    
+            if (valueToReturn < size)                                                           /* insert the first child if possible */
+                *(children) = firstChild->p_pid; 
+            valueToReturn ++;                                                                    
         }
 
         struct pcb_t* iterator = NULL;
-        list_for_each_entry(iterator,&firstChild->p_sib,p_sib){
+        list_for_each_entry(iterator,&firstChild->p_sib,p_sib){                                 /* check for every other children */
             if (currentNs == getNamespace(iterator, NS_PID)){   
                 if (valueToReturn < size)
-                    *(children + valueToReturn) = iterator->p_pid; /* Finchè riesco assegno alla cella contigua dell'array il pid del processo figlio */ 
+                    *(children + valueToReturn) = iterator->p_pid;                              /* contiguously insert the other children if possible */ 
                 valueToReturn ++;
             }
         }

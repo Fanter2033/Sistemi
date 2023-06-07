@@ -28,10 +28,13 @@ void PLTinterrupt();
 void nonTimerInterruptHandler(int interruptLine);
 
 /* Acknowledges the interrupt and unlocks (if there is) the process 
-    from the correct terminal semaphore (and puts it in the readyQueue)*/
+    from the correct device semaphore (and puts it in the readyQueue) */
+void unlockPCB(int index, unsigned int status);
+
+/* resolve terminal interrupt*/
 void resolveTerm(int line, int device);
 
-/* Same as resolveTerm except that this is for every other device */
+/* resolve non terminal interrupt*/
 void resolveNonTerm(int line, int device);
 
 /* -- Additional Functions -- */

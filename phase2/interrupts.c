@@ -1,8 +1,8 @@
 #include "interrupts.h"
 
-void interruptHandler(){                    /* Line 0 has not to be considered (No multi processor) */
-    for (int line=1; line<N_IL;line++){     /* Check from most significant bit (priority considered)*/
-        if (NBIT(CAUSEIP,line) == ON){      /* Check if the interrupt line is on */
+void interruptHandler(){                                /* Line 0 has not to be considered (No multi processor) */
+    for (int line=IL_CPUTIMER; line<N_IL;line++){       /* Check from most significant bit (priority considered)*/
+        if (NBIT(CAUSEIP,line) == ON){                  /* Check if the interrupt line is on */
             switch (line){
                 case IL_CPUTIMER:
                     PLTinterrupt();
@@ -40,68 +40,48 @@ void nonTimerInterruptHandler(int interruptLine){
     }
 }
 
+void unlockPCB(int index, unsigned int status){
+    int* sem = &deviceSem[index];
+    /* V on trasm (sub) device */
+    pcb_t* unlockedPCB = V(sem);
+    if (unlockedPCB != NULL){
+        /* DO_IO ended correctly */
+        unlockedPCB->p_s.reg_v0 = 0;
+        (unlockedPCB->valueAddr)[STATUS] = status;
+        /* insert unlocked in ready queue*/
+        insertProcQ(&readyQueue,unlockedPCB);
+    }
+}
+
 
 void resolveTerm(int line, int device){
     termreg_t* termReg = (termreg_t*)(DEV_REG_ADDR( line, device));
-    int* sem;
+
     int indexDevice;
     
-    if( termReg->transm_status > READY && termReg->transm_status != BUSY ) {
-        unsigned int status = (termReg->transm_status) & TERMSTATMASK;
-        termReg->transm_command = ACK ;
-        indexDevice = (EXT_IL_INDEX(line)*DEVPERINT)+(2*device) + 1 ;
-        sem = &deviceSem[indexDevice];
-        /* V on trasm (sub) device */
-        pcb_t* unlockedPCB = V(sem);
-        if (unlockedPCB != NULL){
-            /* DO_IO ended correctly */
-            unlockedPCB->p_s.reg_v0 = 0;
-            (unlockedPCB->valueAddr)[0] = status;
-            /* insert unlocked in ready queue*/
-            insertProcQ(&readyQueue,unlockedPCB);
-        }
+    if(termReg->transm_status > READY && termReg->transm_status != BUSY){
+        unsigned int status = (termReg->transm_status) & TERMSTATMASK;           /* save off the status from device register */
+        termReg->transm_command = ACK ;                                          /* ACK the interrupt */
+        indexDevice = (EXT_IL_INDEX(line)*DEVPERINT)+(TERMSUB*device) + 1;
+        unlockPCB(indexDevice, status);
     }
 
     if(termReg->recv_status > READY && termReg->recv_status != BUSY){
         unsigned int status = (termReg->recv_status)& TERMSTATMASK;
         termReg->recv_command = ACK;
-        indexDevice = (EXT_IL_INDEX(line)*DEVPERINT)+(2*device);
-        sem = &deviceSem[indexDevice];
-        /* V on recv (sub) device */
-        pcb_t* unlockedPCB = V(sem);
-        if (unlockedPCB != NULL){
-            /* DO_IO ended correctly */
-            unlockedPCB->p_s.reg_v0 = 0;
-            (unlockedPCB->valueAddr)[0] = status;
-            /* insert unlocked in ready queue*/
-            insertProcQ(&readyQueue,unlockedPCB);
-        }
+        indexDevice = (EXT_IL_INDEX(line)*DEVPERINT)+(TERMSUB*device);
+        unlockPCB(indexDevice, status);
     }  
 }
 
 void resolveNonTerm(int line, int device){
-
-    /* take device register from Address */
     dtpreg_t* devReg = (dtpreg_t*)(DEV_REG_ADDR( line, device));
-    int* sem;
-    int indexDevice;
 
     if(devReg->status > READY && devReg->status != BUSY){
-        /* save off the status from device register */
-        unsigned int status = devReg -> status;
-        /* ACK the interrupt */
-        devReg->command = ACK;
-        indexDevice = ((EXT_IL_INDEX(line))*DEVPERINT)+ device;
-        sem = &deviceSem[indexDevice];
-        /* V on semaphore */
-        pcb_t* unlockedPCB = V(sem);
-        if (unlockedPCB != NULL){
-            /* DO_IO ended correctly */
-            unlockedPCB->p_s.reg_v0 = 0;
-            (unlockedPCB->valueAddr)[0] = status;
-            /* insert unlocked in readyQueue */
-            insertProcQ(&readyQueue,unlockedPCB);
-        }
+        unsigned int status = devReg -> status;                     /* save off the status from device register */
+        devReg->command = ACK;                                      /* ACK the interrupt */
+        int indexDevice = ((EXT_IL_INDEX(line))*DEVPERINT)+ device;
+        unlockPCB(indexDevice, status);
     }
     
 }
@@ -131,7 +111,7 @@ pcb_t* V(int* sem){
 void PLTinterrupt(){
     if(((getSTATUS() & STATUS_TE) >> STATUS_TE_BIT) == ON){ /* check if the local timer is enabled */
         setTIMER(TIMESLICE);                                /* ack the interrupt */
-        currentProcess->p_s = (*BIOSDPState);               /* save the processor state */
+        currentProcess->p_s = *BIOSDPState;                 /* save the processor state */
         insertProcQ(&readyQueue,currentProcess);            /* pcb transitioned to the ready state */
         schedule();
     }
