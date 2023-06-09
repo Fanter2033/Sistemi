@@ -1,5 +1,8 @@
 #include "pcb.h"
 
+/* List of free or unused PCB */
+HIDDEN LIST_HEAD(pcbFree_h);
+
 void initPcbs(){
     static pcb_t pcbFree_table[MAXPROC];
     for (int i=0;i<MAXPROC;i++)
@@ -11,7 +14,7 @@ void freePcb(pcb_t* p){
 }
 
 pcb_t* allocPcb(){
-    if (list_empty(&pcbFree_h)) return NULL;  //case1: there is no more PCB available
+    if (list_empty(&pcbFree_h)) return NULL;  //case1: No PCB available
 
     /*case2: take first PCB from pcbFree_h*/
 
@@ -73,7 +76,7 @@ int emptyChild(pcb_t *p){
 
 void insertChild(pcb_t* prnt, pcb_t* p){
     if (emptyChild(prnt)) prnt->p_child.next = &p->p_child; //case1: no child, p in the first
-    else {                                                  //case2: p will be in the sib list of the child
+    else {          //case2: p will be in the sib list of the child
         pcb_t* firstChild = list_first_entry(&prnt->p_child,struct pcb_t,p_child); 
         list_add_tail(&p->p_sib,&firstChild->p_sib);
     }

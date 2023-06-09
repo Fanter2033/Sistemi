@@ -1,57 +1,59 @@
 #ifndef PCB_H
 #define PCB_H
 
-#include "pandos_types.h"
-#include "pandos_const.h"
-#include "list.h"
+#include "../h/pandos_types.h"
+#include "../h/pandos_const.h"
+#include "../h/list.h"
 
-/* pcbFree_h - pcb that are free or not used */
-HIDDEN struct list_head pcbFree_h = LIST_HEAD_INIT(pcbFree_h);
-
-/* init the pcbFree list */
+/* initialize the pcbFree list */
 void initPcbs();
 
-/* add the element pointed by p in pcbFree_h */
+/* adds the PCB pointed by p to pcbFree_h */
 void freePcb(pcb_t* p);
 
-/* if pcbFree is empty then NULL else remove an element from pcbFree_h */
+/* removes an element from pcbFree_h, returns NULL if pcbFree_h is empty*/
 pcb_t* allocPcb();
 
 
 /* -- Queue list management -- */
 
-/* create a empty pcb list */
+/* creates an empty PCB list */
 void mkEmptyProcQ(struct list_head *head);
 
-/* if PCB list is empty then TRUE, FALSE otherwise  */
+/* tests if PCB list is empty (true if empty)*/
 int emptyProcQ(struct list_head *head);
 
-/* insert p's pointer into PCB queue */
+/* adds p to the PCB list head */
 void insertProcQ(struct list_head* head, pcb_t* p);
 
-/* return the head element from PCB queue, NULL otherwise */
+/* returns the head element from PCB queue (without removing it), NULL otherwise */
 pcb_t* headProcQ(struct list_head* head);
 
-/* removes and return the first element from PCB queue, return NULL if the queue is empty*/
+/* removes and return the first element from PCB queue, (NULL if empty) */
 pcb_t* removeProcQ(struct list_head* head);
 
-/* removes the PCB pointed by p from the PCB queue, if P isn't in the queue then return NULL*/
+/* removes and return the PCB pointed by p from the PCB queue, return NULL if P isn't in the queue */
 pcb_t* outProcQ(struct list_head* head, pcb_t* p);
 
 
 
 /* -- Tree management -- */
 
-/* return (PCB pointed by p has children) */
+/* tests whether p has any children (true if empty)*/
 int emptyChild(pcb_t *p);
 
-/* insert the PCB pointed by p as child of PCB pointed by prnt */
+/* inserts p as children of prnt */
 void insertChild(pcb_t* prnt, pcb_t* p);
 
-/* if (p has children) then return and remove its first child else return NULL */
+/* removes and return the first child of p (NULL if it doesn't exist) */
 pcb_t* removeChild(pcb_t* p);
 
-/* if (PCB pointed by p has a father) remove it else return NULL (this PCB could be in any position)*/
+/* removes p from the children list of its parent (NULL if it hasn't one) and returns it*/
 pcb_t* outChild(pcb_t* p);
+
+/*additional function for phase2: search a PCB in a queue via its pid 
+  and returns it (NULL if it isn't in the queue) */
+pcb_t* findPCBfromQUEUE(int pid, struct list_head* head );
+
 
 #endif //PCB_H

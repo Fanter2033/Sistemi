@@ -1,6 +1,12 @@
 #include "ns.h" 
 
- void initNamespaces(){
+/* List of free namespaces of type "type" */
+HIDDEN struct list_head type_nsFree_h[NS_TYPE_MAX];
+ 
+/* List of active namespaces of type "type" */
+HIDDEN struct list_head type_nsList_h[NS_TYPE_MAX];
+
+void initNamespaces(){
     static struct nsd_t type_nsd[NS_TYPE_MAX][MAXPROC];    
 
     for (int i=0;i<NS_TYPE_MAX;i++){
@@ -10,7 +16,7 @@
 
         for (int j=0;j<MAXPROC;j++){
             /* add all namespaces to freeList */
-            type_nsd[i][j].n_type = NULL;  
+            type_nsd[i][j].n_type = i;  
             list_add(&(type_nsd[i][j].n_link),&type_nsFree_h[i]);
         }
     } 
@@ -27,7 +33,7 @@ nsd_t* getNamespace(pcb_t *p, int type){
 
 int addNamespace(pcb_t *p, nsd_t *ns){
     
-    if (p==NULL || ns==NULL) return 0;      //error cases
+    if (p==NULL || ns==NULL) return 0; //error cases
 
     p->namespaces[ns->n_type]=ns;
 
