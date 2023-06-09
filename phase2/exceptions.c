@@ -1,21 +1,26 @@
 #include "exceptions.h"
 
+#define NOTDEV(cmdAddr) (int)cmdAddr < (memaddr)DEV_REG_START || (int)cmdAddr >= (memaddr) DEV_REG_END
+#define LINEDEV        (((int)cmdAddr - (int)DEV_REG_START) / (DEV_REG_SIZE*DEVPERINT)) + DEV_IL_START
+
+#define GENERALERROR   -1 
+
 void exceptionHandler(){
     if(currentProcess != NULL){updateCPUtime();}
     BIOSDPState = ((state_t *) BIOSDATAPAGE);                       /* use processor state in BIOS Data Page */
     unsigned int excCode = CAUSE_GET_EXCCODE(BIOSDPState->cause);   /* retrieve the exceptionCode */
 
     switch(excCode){
-        case EXC_INT:         /* Interrupt */
+        case EXC_INT:                /* Interrupt */
             interruptHandler();
             break;
         case EXC_MOD ... EXC_TLBS:   /* TLB exceptions */
             passUporDie(PGFAULTEXCEPT);
             break;
-        case EXC_SYS:         /* Syscall */
+        case EXC_SYS:                /* Syscall */
             syscallExcHandler();
             break;
-        default:        /* Program Traps */
+        default:                     /* Program Traps */
             passUporDie(GENERALEXCEPT);    
             break;
     }
@@ -195,34 +200,32 @@ bool Verhogen(int* sem){
 
 
 int DO_IO(int *cmdAddr, int *cmdValues){
-    /* save cmdValues */
-    currentProcess->valueAddr = (unsigned int *)cmdValues;
-    /* find the correct device for I/O from its address */
-    int line = findLine(cmdAddr);
-    int device = findDevice(line,cmdAddr);
-    int indexDevice = (EXT_IL_INDEX(line)*DEVPERINT)+ device;
+    currentProcess->valueAddr = (unsigned int *)cmdValues;      /* save cmdValues */
 
-    if (indexDevice<0){ /* error case */
+    int line = findLine(cmdAddr);                                
+    int device = findDevice(line,cmdAddr);                      /* find the correct device for I/O from its address */
+    int indexDevice = (EXT_IL_INDEX(line)*DEVPERINT) + device;
+
+    if (indexDevice < 0){                           /* error case */
         return -1;
     }
-    else if (indexDevice < (DEVICECNT-DEVPERINT)){ /* non-terminal device */
+    else if (indexDevice < (DEVICECNT-DEVPERINT)){  /* non-terminal device */
         dtpreg_t* dev = (dtpreg_t*)(cmdAddr);
         dev->command = cmdValues[COMMAND];
     }
-    else { /* terminal device */
+    else {                                          /* terminal device */
         termreg_t* terminal;
-        if (indexDevice%2==0){ /* recv */
+        if (indexDevice%2==0){      /* recv */
             terminal = (termreg_t*)cmdAddr;
             terminal->recv_command = cmdValues[COMMAND]; 
         }
-        else { /* transm */
+        else {                      /* transm */
             terminal = (termreg_t*)((int)cmdAddr - (DEV_REG_SIZE/TERMSUB)); /* cmdAddr is the trasm address, so the terminal is cmdAddress - 8*/
             terminal -> transm_command = cmdValues[COMMAND];
         } 
     }
 
-    /* block the process on that device */
-    int *sem = &deviceSem[indexDevice];
+    int *sem = &deviceSem[indexDevice];                         /* block the process on that device */
     P(sem);
 
     return 0;
@@ -230,13 +233,9 @@ int DO_IO(int *cmdAddr, int *cmdValues){
 
 
 int findLine(int *cmdAddr){
-    if ((int)cmdAddr < (memaddr)DEV_REG_START || (int)cmdAddr >= (memaddr) DEV_REG_END){
-            return -1;
-    }
-    else
-        return (((int)cmdAddr - (int)DEV_REG_START) / (DEV_REG_SIZE*DEVPERINT)) + DEV_IL_START;
-
+    return (NOTDEV(cmdAddr)) ? GENERALERROR : LINEDEV; 
 }
+
 
 int findDevice(int line,int* cmdAddr){
     return line == IL_TERMINAL ? (int)((int)cmdAddr - (int)DEV_REG_ADDR(line,0)) / DEVPERINT : (int)((int)cmdAddr - (int)DEV_REG_ADDR(line,0)) / (DEVPERINT*TERMSUB); 
@@ -262,14 +261,14 @@ support_t* getSupportData(){
 
 
 int getProcessID(int parent){
-    nsd_t* ns = getNamespace(currentProcess, NS_PID);
-    if (parent){
-        if (ns==getNamespace(currentProcess->p_parent,NS_PID)){
+    if (parent){                            /* father's pid (it should be the same namespace) */
+        nsd_t* ns = getNamespace(currentProcess, NS_PID);
+        if (ns == getNamespace(currentProcess->p_parent,NS_PID))
             return currentProcess-> p_parent-> p_pid;
-        }
+
         return 0;
     }
-    else return currentProcess->p_pid;
+    else return currentProcess->p_pid;      /* my pid */
 }
 
 
