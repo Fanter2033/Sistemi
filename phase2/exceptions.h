@@ -3,6 +3,14 @@
 
 #include <utils.h>
 
+#define GENERALERROR   -1 
+
+/* Checks if an address is a devices' one */
+#define NOTDEV(cmdAddr) (int)cmdAddr < (memaddr)DEV_REG_START || (int)cmdAddr >= (memaddr) DEV_REG_END
+
+/* Calculate the correct interrupt line from an address */
+#define LINEDEV(cmdAddr) (((int)cmdAddr - (int)DEV_REG_START) / (DEV_REG_SIZE*DEVPERINT)) + DEV_IL_START
+
 /* ---- Global Variables ---- */
 
 state_t* BIOSDPState; /* BIOS Data Page exception State */

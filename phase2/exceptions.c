@@ -1,10 +1,5 @@
 #include "exceptions.h"
 
-#define NOTDEV(cmdAddr) (int)cmdAddr < (memaddr)DEV_REG_START || (int)cmdAddr >= (memaddr) DEV_REG_END
-#define LINEDEV        (((int)cmdAddr - (int)DEV_REG_START) / (DEV_REG_SIZE*DEVPERINT)) + DEV_IL_START
-
-#define GENERALERROR   -1 
-
 void exceptionHandler(){
     if(currentProcess != NULL){updateCPUtime();}
     BIOSDPState = ((state_t *) BIOSDATAPAGE);                       /* use processor state in BIOS Data Page */
@@ -200,10 +195,11 @@ bool Verhogen(int* sem){
 
 
 int DO_IO(int *cmdAddr, int *cmdValues){
-    currentProcess->valueAddr = (unsigned int *)cmdValues;      /* save cmdValues */
+    currentProcess->valueAddr = (unsigned int *)cmdValues;
 
+    /* find the correct device for I/O from its address */
     int line = findLine(cmdAddr);                                
-    int device = findDevice(line,cmdAddr);                      /* find the correct device for I/O from its address */
+    int device = findDevice(line,cmdAddr);                      
     int indexDevice = (EXT_IL_INDEX(line)*DEVPERINT) + device;
 
     if (indexDevice < 0){                           /* error case */
@@ -224,8 +220,8 @@ int DO_IO(int *cmdAddr, int *cmdValues){
             terminal -> transm_command = cmdValues[COMMAND];
         } 
     }
-
-    int *sem = &deviceSem[indexDevice];                         /* block the process on that device */
+    /* block the process on that device */
+    int *sem = &deviceSem[indexDevice];
     P(sem);
 
     return 0;
@@ -233,12 +229,13 @@ int DO_IO(int *cmdAddr, int *cmdValues){
 
 
 int findLine(int *cmdAddr){
-    return (NOTDEV(cmdAddr)) ? GENERALERROR : LINEDEV; 
+    return (NOTDEV(cmdAddr)) ? GENERALERROR : LINEDEV(cmdAddr); 
 }
 
 
 int findDevice(int line,int* cmdAddr){
-    return line == IL_TERMINAL ? (int)((int)cmdAddr - (int)DEV_REG_ADDR(line,0)) / DEVPERINT : (int)((int)cmdAddr - (int)DEV_REG_ADDR(line,0)) / (DEVPERINT*TERMSUB); 
+    int devNum = (line==IL_TERMINAL ? DEVPERINT : DEVPERINT*TERMSUB); 
+    return (int)((int)cmdAddr - (int)DEV_REG_ADDR(line,0)) / devNum;
 }
 
 
@@ -249,7 +246,7 @@ cpu_t getTime(){
 
 void waitForClock(){
     if(pseudoClockSem == 0){
-        insertBlocked(&pseudoClockSem, currentProcess);  /* current process enters in block state */
+        insertBlocked(&pseudoClockSem, currentProcess);
         SBcount++;
     }
 }
@@ -261,14 +258,14 @@ support_t* getSupportData(){
 
 
 int getProcessID(int parent){
-    if (parent){                            /* father's pid (it should be the same namespace) */
+    if (parent){
         nsd_t* ns = getNamespace(currentProcess, NS_PID);
-        if (ns == getNamespace(currentProcess->p_parent,NS_PID))
+        if (ns == getNamespace(currentProcess->p_parent,NS_PID)) /*checks if they belong to the same namespace */
             return currentProcess-> p_parent-> p_pid;
 
         return 0;
     }
-    else return currentProcess->p_pid;      /* my pid */
+    else return currentProcess->p_pid;
 }
 
 

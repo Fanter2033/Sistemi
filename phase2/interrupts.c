@@ -42,14 +42,11 @@ void nonTimerInterruptHandler(int interruptLine){
 
 void unlockPCB(int index, unsigned int status){
     int* sem = &deviceSem[index];
-    /* V on trasm (sub) device */
-    pcb_t* unlockedPCB = V(sem);
-    if (unlockedPCB != NULL){
-        /* DO_IO ended correctly */
+    pcb_t* unlockedPCB = V(sem);                    /* V on (sub) device */
+    if (unlockedPCB != NULL){                       /* DO_IO ended correctly */
         unlockedPCB->p_s.reg_v0 = 0;
-        (unlockedPCB->valueAddr)[STATUS] = status;
-        /* insert unlocked in ready queue*/
-        insertProcQ(&readyQueue,unlockedPCB);
+        (unlockedPCB->valueAddr)[STATUS] = status; 
+        insertProcQ(&readyQueue,unlockedPCB);       /* Insert unlocked in readyQueue */
     }
 }
 
@@ -62,7 +59,7 @@ void resolveTerm(int line, int device){
     if(termReg->transm_status > READY && termReg->transm_status != BUSY){
         unsigned int status = (termReg->transm_status) & TERMSTATMASK;           /* save off the status from device register */
         termReg->transm_command = ACK ;                                          /* ACK the interrupt */
-        indexDevice = (EXT_IL_INDEX(line)*DEVPERINT)+(TERMSUB*device) + 1;
+        indexDevice = (EXT_IL_INDEX(line)*DEVPERINT)+(TERMSUB*device) + 1;       /* find the correct device */
         unlockPCB(indexDevice, status);
     }
 
@@ -80,7 +77,7 @@ void resolveNonTerm(int line, int device){
     if(devReg->status > READY && devReg->status != BUSY){
         unsigned int status = devReg -> status;                     /* save off the status from device register */
         devReg->command = ACK;                                      /* ACK the interrupt */
-        int indexDevice = ((EXT_IL_INDEX(line))*DEVPERINT)+ device;
+        int indexDevice = ((EXT_IL_INDEX(line))*DEVPERINT)+ device; /* find the correct device */
         unlockPCB(indexDevice, status);
     }
     

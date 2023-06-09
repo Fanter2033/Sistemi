@@ -27,7 +27,7 @@ void PLTinterrupt();
 /* Calculates which device has caused the interrupt and calls a function to resolve it*/
 void nonTimerInterruptHandler(int interruptLine);
 
-/* Acknowledges the interrupt and unlocks (if there is) the process 
+/* Acknowledges the interrupt and unlocks (if present) the process 
     from the correct device semaphore (and puts it in the readyQueue) */
 void unlockPCB(int index, unsigned int status);
 

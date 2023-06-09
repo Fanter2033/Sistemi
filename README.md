@@ -1,5 +1,11 @@
-# Sistemi
-progetto sistemi operativi
+# Sistemi Operativi
 
-siamo tornati a vecchia DOIO (un solo array), le modifiche sono sulla nuova branch berforeIOchange
-LAVORARE IN LOCALE su berforeIO perchè prima bisogna aggiustare il main
+Progetto di Sistemi Operativi A.A. 2022-2023
+Università di Bologna
+
+## Contributors:
+
+Pietro Sami
+Francesco Testa
+Leonardo Venturi
+Camilla Vescovi
