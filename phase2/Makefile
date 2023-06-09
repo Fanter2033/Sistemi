@@ -32,16 +32,16 @@ VPATH = $(UMPS3_DATA_DIR)
 
 .PHONY : all clean
 
-all : ./kernel/kernel.core.umps
+all : ./machine/kernel.core.umps
 
-./kernel/kernel.core.umps : ./kernel/kernel
+./machine/kernel.core.umps : ./machine/kernel
 	umps3-elf2umps -k $<
 
-./kernel/kernel : initial.o scheduler.o exceptions.o interrupts.o p2test.04.o ./phase1/pcb.o ./phase1/ash.o ./phase1/ns.o crtso.o libumps.o
+./machine/kernel : initial.o scheduler.o exceptions.o interrupts.o p2test.04.o ./phase1/pcb.o ./phase1/ash.o ./phase1/ns.o crtso.o libumps.o
 	$(LD) -o $@ $^ $(LDFLAGS)
 
 clean :
-	-rm -f *.o ./kernel/kernel ./kernel/kernel.*.umps ./phase1/*.o
+	-rm -f *.o ./machine/kernel ./machine/kernel.*.umps ./phase1/*.o
 
 # Pattern rule for assembly modules
 %.o : %.S

@@ -17,7 +17,6 @@ endif
 UMPS3_DATA_DIR = $(UMPS3_DIR_PREFIX)/share/umps3
 UMPS3_INCLUDE_DIR = $(UMPS3_DIR_PREFIX)/include/umps3
 UMPS3_TYPE_DIR = ./h/
-UMPS3_PHASE1_DIR = ./phase1/
 
 # Compiler options
 CFLAGS_LANG = -ffreestanding -ansi
