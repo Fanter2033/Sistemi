@@ -44,15 +44,15 @@ void syscallExcHandler(){
 
           case PASSEREN:
               if (Passeren((int *)BIOSDPState->reg_a1)){
-                  SAVEDSTATE;
-                  schedule();
+                  SAVESTATE;
+                  scheduler();
               }
               break;
 
           case VERHOGEN:
               if (Verhogen((int *)BIOSDPState->reg_a1)){
-                  SAVEDSTATE;
-                  schedule();
+                  SAVESTATE;
+                  scheduler();
               }
               break;
 
@@ -60,8 +60,8 @@ void syscallExcHandler(){
               BIOSDPState->reg_v0 = (int) DO_IO(
                   (int *)(BIOSDPState->reg_a1),
                   (int *)(BIOSDPState->reg_a2));
-                  SAVEDSTATE;
-                  schedule();
+                  SAVESTATE;
+                  scheduler();
               break;
 
           case GETTIME:
@@ -70,8 +70,8 @@ void syscallExcHandler(){
 
           case CLOCKWAIT:
               waitForClock();
-              SAVEDSTATE;
-              schedule();
+              SAVESTATE;
+              scheduler();
               break;
 
           case GETSUPPORTPTR:
@@ -135,12 +135,9 @@ void terminateProcess(int pid){
     outChild(proc);                                                                             /* the process is separated from its parent */    
     if(proc->p_semAdd!=NULL){                                                                   /* Case 1: the process is blocked on a semaphore */
         int * tmpSem = proc->p_semAdd;                                                          
-        pcb_t* tmpSet = outBlocked(proc);                                                       
+        outBlocked(proc);                                                       
         if((deviceSem <= tmpSem && tmpSem <= deviceSem + ALDEV) || tmpSem == &pseudoClockSem){  /* softBlock Semaphore*/
             SBcount--;                                                                             
-        }
-        else if (tmpSet==NULL){                                                                 /* non-SB semaphore */
-            *tmpSem = 1 - *tmpSem;                                                              /* the queue is empty so we adjust the value */
         }
     }else if (proc!=currentProcess){                                                            /* Case 2: process in readyQueue */
         outProcQ(&readyQueue, proc);                                                            
@@ -152,7 +149,7 @@ void terminateProcess(int pid){
     }
     freePcb(proc);                                                                              /* finally delete the process */
     if(currentProcess==proc){                                                                   /* no process to return control to */
-        schedule();
+        scheduler();
     }                                         
 }
 
@@ -229,7 +226,7 @@ int DO_IO(int *cmdAddr, int *cmdValues){
 
 
 int findLine(int *cmdAddr){
-    return (NOTDEV(cmdAddr)) ? GENERALERROR : LINEDEV(cmdAddr); 
+    return (NOTDEV(cmdAddr)) ? NOPROC : LINEDEV(cmdAddr); 
 }
 
 

@@ -3,8 +3,6 @@
 
 #include <utils.h>
 
-#define GENERALERROR   -1 
-
 /* Checks if an address is a devices' one */
 #define NOTDEV(cmdAddr) (int)cmdAddr < (memaddr)DEV_REG_START || (int)cmdAddr >= (memaddr) DEV_REG_END
 

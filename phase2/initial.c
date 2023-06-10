@@ -53,7 +53,7 @@ int main(){
     RAMTOP(init->p_s.reg_sp);
 
     /* call the scheduler */
-    schedule();
+    scheduler();
 
     return 0;
 }

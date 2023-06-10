@@ -10,7 +10,7 @@
 
 #define TERMSUB 2                   /* Sub device for terminal */
 #define ALDEV DEVICECNT + DEVINTNUM   /* Number of (sub)devices semaphores */
-#define SAVEDSTATE currentProcess->p_s = *BIOSDPState
+#define SAVESTATE currentProcess->p_s = *BIOSDPState
 
 
 /*
@@ -43,7 +43,7 @@ extern int PID;
 extern void test();                 
 extern void uTLB_RefillHandler();
 extern void exceptionHandler();
-extern void schedule();
+extern void scheduler();
 extern void interruptHandler();
 extern void P(int* sem);
 

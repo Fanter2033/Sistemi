@@ -5,6 +5,6 @@
 
 /* ---- Functions Declaration ---- */
 
-void schedule();
+void scheduler();
 
 #endif

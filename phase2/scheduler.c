@@ -1,6 +1,6 @@
 #include "scheduler.h"
 
-void schedule(){
+void scheduler(){
     currentProcess = NULL;
     if (emptyProcQ(&readyQueue)){
         if (processCount==0)                         /* case 1: nothing else to do */

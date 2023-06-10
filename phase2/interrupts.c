@@ -20,7 +20,7 @@ void interruptHandler(){                                /* Line 0 has not to be 
     }
     /* return control to Current Process if it exists*/
     if (currentProcess==NULL){
-        schedule();
+        scheduler();
     }
     LDST(BIOSDPState);
 }
@@ -109,9 +109,9 @@ pcb_t* V(int* sem){
 void PLTinterrupt(){
     if(((getSTATUS() & STATUS_TE) >> STATUS_TE_BIT) == ON){ /* check if the local timer is enabled */
         setTIMER(TIMESLICE);                                /* ack the interrupt */
-        SAVEDSTATE;                 /* save the processor state */
+        SAVESTATE;                                          /* save the processor state */
         insertProcQ(&readyQueue,currentProcess);            /* pcb transitioned to the ready state */
-        schedule();
+        scheduler();
     }
 }
 
