@@ -9,7 +9,9 @@
 #include <umps3/umps/types.h>
 
 #define TERMSUB 2                   /* Sub device for terminal */
-#define ALDEV DEVICECNT+DEVINTNUM   /* Number of (sub)devices semaphores */
+#define ALDEV DEVICECNT + DEVINTNUM   /* Number of (sub)devices semaphores */
+#define SAVEDSTATE currentProcess->p_s = *BIOSDPState
+
 
 /*
     All Lines Devices [ALDEV] represents:

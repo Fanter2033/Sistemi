@@ -44,14 +44,14 @@ void syscallExcHandler(){
 
           case PASSEREN:
               if (Passeren((int *)BIOSDPState->reg_a1)){
-                  currentProcess->p_s = *BIOSDPState;
+                  SAVEDSTATE;
                   schedule();
               }
               break;
 
           case VERHOGEN:
               if (Verhogen((int *)BIOSDPState->reg_a1)){
-                  currentProcess->p_s = *BIOSDPState;
+                  SAVEDSTATE;
                   schedule();
               }
               break;
@@ -60,7 +60,7 @@ void syscallExcHandler(){
               BIOSDPState->reg_v0 = (int) DO_IO(
                   (int *)(BIOSDPState->reg_a1),
                   (int *)(BIOSDPState->reg_a2));
-                  currentProcess->p_s = *BIOSDPState;
+                  SAVEDSTATE;
                   schedule();
               break;
 
@@ -70,7 +70,7 @@ void syscallExcHandler(){
 
           case CLOCKWAIT:
               waitForClock();
-              currentProcess->p_s = *BIOSDPState;
+              SAVEDSTATE;
               schedule();
               break;
 

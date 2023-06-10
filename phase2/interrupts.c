@@ -28,13 +28,13 @@ void interruptHandler(){                                /* Line 0 has not to be 
 
 void nonTimerInterruptHandler(int interruptLine){
     int* deviceBitMap = (int *)CDEV_BITMAP_ADDR(interruptLine);     /* store the Bit Map of line */
-    for (int bit=0;bit<DEVPERINT;bit++){                            /* check for all the devices of the line*/
-        if (NBIT(*deviceBitMap,bit)==ON){                           /* check if the device has an interrupt pending */
-            if (interruptLine==IL_TERMINAL){
+    for (int bit=0; bit < DEVPERINT; bit++){                        /* check for all the devices of the line*/
+        if (NBIT(*deviceBitMap,bit) == ON){                         /* check if the device has an interrupt pending */
+            if (interruptLine == IL_TERMINAL)
                 resolveTerm(interruptLine,bit);
-            } else{
+            else
                 resolveNonTerm(interruptLine,bit);
-            }
+            
             *deviceBitMap &= (~(1<<bit));                           /* set the corresponding bit to 0 */
         }
     }
@@ -49,7 +49,6 @@ void unlockPCB(int index, unsigned int status){
         insertProcQ(&readyQueue,unlockedPCB);       /* Insert unlocked in readyQueue */
     }
 }
-
 
 void resolveTerm(int line, int device){
     termreg_t* termReg = (termreg_t*)(DEV_REG_ADDR( line, device));
@@ -83,8 +82,9 @@ void resolveNonTerm(int line, int device){
     
 }
 
+
 void P(int* sem){
-    if (*sem <=0 ){ /* blocking */
+    if (*sem <=0 ){                              /* blocking */
         insertBlocked(sem, currentProcess);
         SBcount++;
     }
@@ -94,21 +94,22 @@ void P(int* sem){
 }
 
 pcb_t* V(int* sem){
-    if (headBlocked(sem) == NULL){ /* no pcb in queue */
+    if (headBlocked(sem) == NULL){               /* no pcb in queue */
         (*sem) = 1;
         return NULL;
     }
     else{
-        pcb_t* unlocked = removeBlocked(sem); /* unblocking */
+        pcb_t* unlocked = removeBlocked(sem);    /* unblocking */
         SBcount--;
         return unlocked;
     }
 }
 
+
 void PLTinterrupt(){
     if(((getSTATUS() & STATUS_TE) >> STATUS_TE_BIT) == ON){ /* check if the local timer is enabled */
         setTIMER(TIMESLICE);                                /* ack the interrupt */
-        currentProcess->p_s = *BIOSDPState;                 /* save the processor state */
+        SAVEDSTATE;                 /* save the processor state */
         insertProcQ(&readyQueue,currentProcess);            /* pcb transitioned to the ready state */
         schedule();
     }
@@ -116,7 +117,7 @@ void PLTinterrupt(){
 
 void ITInterrupt(){
     LDIT(PSECOND);                                          /* ack the interrupt */
-    while(headBlocked(&pseudoClockSem)!=NULL){              /* unlock ALL processes */
+    while(headBlocked(&pseudoClockSem) != NULL){            /* unlock ALL processes */
         insertProcQ(&readyQueue,removeBlocked(&pseudoClockSem));
         SBcount--;
     }   
