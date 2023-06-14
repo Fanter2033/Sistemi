@@ -62,12 +62,25 @@ SyscallExcHandler:
     - Semaforo non SB: Se il processo era l'unico in coda, aggiustiamo il valore del semaforo riportandolo allo stato iniziale. //Remove riga 141
     
     Nel caso in cui il processo terminato fosse il currentProcess, non c'è più alcun processo a cui far tornare il controllo e quindi invochiamo lo scheduler.
-- Passeren
+- Passeren: 
+    Implementata basandosi sulla P relativa ai semafori binari.
+    Quando il valore del semaforo è a 1 e ci sono processi bloccati su di esso, la funzione rimuove il primo processo bloccato e lo inserisce nella readyQueue
 - Verhogen
+    Duale della P
 - DO_IO:
-- waitForClock
-- getProcessID
-- getChilren
+    Per determinare il tipo didevice su cui vorremo fare la richiesta di Input / Output abbiamo realizzato le funzioni:
+    - findLine: Se l'indirizzo del cmdAddress appartiene ad un device ( è compreso nella regioe dei registri destinati ai dispositivi ) allora calcola la linea dell'interrupt relativa al device.
+    spiegaazione calcolo ????
+    - findDevice: ritorna il subdevice relativo alla linea da cui proviene l'interrupt
+    spiegazione calcolo ????
+    Se il device è un non-terminale allora inserisco il primo valore dell'array cmdValues nel campo command del device in questione. Altrimenti devo distinguere due casi (ricezione e trasissione della console)
+    Infine la funzione esegue un operazione P, che blocchera il processo sul semaforo relativo al device.
+
+- waitForClock:
+
+- getProcessID:
+- getChilren:
+Nel caso in cui il currentProcess abbia un figlio, la funzione inserisce nell'array passato come parametro prima il primo figlio. In seguito itera sui fratelli del primo genito. Gli inserimenti nell'array avvengono se e solo se i namespaces dei figli sono identici a quelli del padre
 
 ## interrupts.h
 Gli interrupt vengono distinti in tre categorie:
