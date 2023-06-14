@@ -71,10 +71,10 @@ SyscallExcHandler:
     Per determinare il tipo didevice su cui vorremo fare la richiesta di Input / Output abbiamo realizzato le funzioni:
     - findLine: Se l'indirizzo del cmdAddress appartiene ad un device ( è compreso nella regioe dei registri destinati ai dispositivi ) allora calcola la linea dell'interrupt relativa al device.
     spiegaazione calcolo ????
-    - findDevice: ritorna il subdevice relativo alla linea da cui proviene l'interrupt
+    - findDevice: ritorna il subdevice relativo alla linea di interrupt
     spiegazione calcolo ????
     Se il device è un non-terminale allora inserisco il primo valore dell'array cmdValues nel campo command del device in questione. Altrimenti devo distinguere due casi (ricezione e trasissione della console)
-    Infine la funzione esegue un operazione P, che blocchera il processo sul semaforo relativo al device.
+    Infine la funzione esegue un operazione P, che blocchera il processo sul semaforo del relativo device.
 
 - waitForClock:
 
@@ -88,10 +88,12 @@ Gli interrupt vengono distinti in tre categorie:
 - interrupt generati dall' IT: ITinterrupt()
 - tutti gli altri: nonTimerInterruptHandler
 In particolare l'ultimo caso deve fare la distinzione tra interrupt provenienti o no dal terminale.
-Per ottenere l'n-esimo bit di una stringa abbiamo implementato la macro: NBIT 
+Per ottenere l'n-esimo bit di una stringa abbiamo implementato la macro: NBIT
 *e.g. voglio il terzo bit di: 0110 -> (1110 & 0100) >> 3*
                                             *(0100) >> 3*
                                                      *01 : il valore del terzo bit è 1*
+
+NBIT viene utilizzata per risalire all'origine dell'interrupt
 
                                              
 
