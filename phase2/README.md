@@ -70,4 +70,17 @@ SyscallExcHandler:
 - getChilren
 
 ## interrupts.h
+Gli interrupt vengono distinti in tre categorie:
+- interrupt generati dal PLT: PLTinterrupt()
+- interrupt generati dall' IT: ITinterrupt()
+- tutti gli altri: nonTimerInterruptHandler
+In particolare l'ultimo caso deve fare la distinzione tra interrupt provenienti o no dal terminale.
+Per ottenere l'n-esimo bit di una stringa abbiamo implementato la macro: NBIT 
+*e.g. voglio il terzo bit di: 0110 -> (1110 & 0100) >> 3*
+                                            *(0100) >> 3*
+                                                     *01 : il valore del terzo bit è 1*
+
+                                             
+
+
 

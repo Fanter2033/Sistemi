@@ -18,7 +18,7 @@ void interruptHandler();
 
 /* Performs a V for every process blocked on the pseudoClock semaphore and 
     puts the unblocked processes on the readyQueue*/
-void ITInterrupt();
+void ITinterrupt();
 
 /* Handles the processor local timer interrupt and so it moves the 
     currentProcess to the readyQueue */

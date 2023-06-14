@@ -9,7 +9,7 @@ void interruptHandler(){                                /* Line 0 has not to be 
                     break;
 
                 case IL_TIMER:
-                    ITInterrupt();
+                    ITinterrupt();
                     break;
 
                 default:                    
@@ -115,7 +115,7 @@ void PLTinterrupt(){
     }
 }
 
-void ITInterrupt(){
+void ITinterrupt(){
     LDIT(PSECOND);                                          /* ack the interrupt */
     while(headBlocked(&pseudoClockSem) != NULL){            /* unlock ALL processes */
         insertProcQ(&readyQueue,removeBlocked(&pseudoClockSem));
