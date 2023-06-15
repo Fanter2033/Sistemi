@@ -1,7 +1,7 @@
 #include "interrupts.h"
 
 void interruptHandler(){                                /* Line 0 has not to be considered (No multi processor) */
-    for (int line=IL_CPUTIMER; line<N_IL;line++){       /* Check from most significant bit (priority considered)*/
+    for (int line = IL_CPUTIMER; line < N_IL; line++){  /* Check from most significant bit (priority considered)*/
         if (NBIT(CAUSEIP,line) == ON){                  /* Check if the interrupt line is on */
             switch (line){
                 case IL_CPUTIMER:
@@ -58,14 +58,14 @@ void resolveTerm(int line, int device){
     if(termReg->transm_status > READY && termReg->transm_status != BUSY){
         unsigned int status = (termReg->transm_status) & TERMSTATMASK;           /* save off the status from device register */
         termReg->transm_command = ACK ;                                          /* ACK the interrupt */
-        indexDevice = (EXT_IL_INDEX(line)*DEVPERINT)+(TERMSUB*device) + 1;       /* find the correct device */
+        indexDevice = (IDEVCLASS(line))+(TERMSUB*device) + 1;       /* find the correct device */
         unlockPCB(indexDevice, status);
     }
 
     if(termReg->recv_status > READY && termReg->recv_status != BUSY){
         unsigned int status = (termReg->recv_status)& TERMSTATMASK;
         termReg->recv_command = ACK;
-        indexDevice = (EXT_IL_INDEX(line)*DEVPERINT)+(TERMSUB*device);
+        indexDevice = (IDEVCLASS(line))+(TERMSUB*device);
         unlockPCB(indexDevice, status);
     }  
 }

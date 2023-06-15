@@ -83,17 +83,22 @@ SyscallExcHandler:
 Nel caso in cui il currentProcess abbia un figlio, la funzione inserisce nell'array passato come parametro prima il primo figlio. In seguito itera sui fratelli del primo genito. Gli inserimenti nell'array avvengono se e solo se i namespaces dei figli sono identici a quelli del padre
 
 ## interrupts.h
+( ????)
 Gli interrupt vengono distinti in tre categorie:
 - interrupt generati dal PLT: PLTinterrupt()
 - interrupt generati dall' IT: ITinterrupt()
 - tutti gli altri: nonTimerInterruptHandler
 In particolare l'ultimo caso deve fare la distinzione tra interrupt provenienti o no dal terminale.
-Per ottenere l'n-esimo bit di una stringa abbiamo implementato la macro: NBIT
-*e.g. voglio il terzo bit di: 0110 -> (1110 & 0100) >> 3*
-                                            *(0100) >> 3*
-                                                     *01 : il valore del terzo bit è 1*
+Per ottenere l'n-esimo bit di una stringa abbiamo implementato la macro: NBIT <br>
+*e.g. voglio il terzo bit di: 0110 -> (1110 & 0100) >> 3* <br>
+                                            *(0100) >> 3* <br>
+                                                     *01 : il valore del terzo bit è 1* <br>
 
-NBIT viene utilizzata per risalire all'origine dell'interrupt
+NBIT viene utilizzata per risalire all'interrupt line che ha dato origine all'interrupt, se la linea è la settima allora viene chiamata la funzione resolveTerm alla funzione resolveTerm altrimenti resolveNonTerm.
+- UnlockPCB è funzione ausiliaria per resolveTerm e resolveNonTerm: performa un operazione V (sbloccante sul semaforo) e inserisce il processo nella coda ready.
+- resolveTerm: distingue i casi, trasmitted (priorità piú alta) e received (priorità èiú bassa). In entrambi i casi viene salvato lo stato e mandato l'ACK. Viene infine chiamata la procedura unlockPCB a cui viene passato l'indice del singolo device che ha generato l'interrupt.
+- resolveNonTerm; stesso funzionamento ma senza la distinzione tra trasmitted e received.
+
 
                                              
 

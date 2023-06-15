@@ -195,9 +195,9 @@ int DO_IO(int *cmdAddr, int *cmdValues){
     currentProcess->valueAddr = (unsigned int *)cmdValues;
 
     /* find the correct device for I/O from its address */
-    int line = findLine(cmdAddr);                                
+    int line   = findLine(cmdAddr);                                
     int device = findDevice(line,cmdAddr);                      
-    int indexDevice = (EXT_IL_INDEX(line)*DEVPERINT) + device;
+    int indexDevice = (IDEVCLASS(line)) + device;
 
     if (indexDevice < 0){                           /* error case */
         return -1;

@@ -11,6 +11,7 @@
 #define TERMSUB 2                   /* Sub device for terminal */
 #define ALDEV DEVICECNT + DEVINTNUM   /* Number of (sub)devices semaphores */
 #define SAVESTATE currentProcess->p_s = *BIOSDPState
+#define IDEVCLASS(line) EXT_IL_INDEX(line)*DEVPERINT
 
 
 /*
