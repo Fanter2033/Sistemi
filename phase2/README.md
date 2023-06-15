@@ -83,7 +83,7 @@ SyscallExcHandler:
 Nel caso in cui il currentProcess abbia un figlio, la funzione inserisce nell'array passato come parametro prima il primo figlio. In seguito itera sui fratelli del primo genito. Gli inserimenti nell'array avvengono se e solo se i namespaces dei figli sono identici a quelli del padre
 
 ## interrupts.h
-( ????)
+(????)
 Gli interrupt vengono distinti in tre categorie:
 - interrupt generati dal PLT: PLTinterrupt()
 - interrupt generati dall' IT: ITinterrupt()
@@ -97,7 +97,7 @@ Per ottenere l'n-esimo bit di una stringa abbiamo implementato la macro: NBIT <b
 NBIT viene utilizzata per risalire all'interrupt line che ha dato origine all'interrupt, se la linea è la settima allora viene chiamata la funzione resolveTerm alla funzione resolveTerm altrimenti resolveNonTerm.
 - UnlockPCB è funzione ausiliaria per resolveTerm e resolveNonTerm: performa un operazione V (sbloccante sul semaforo) e inserisce il processo nella coda ready.
 - resolveTerm: distingue i casi, trasmitted (priorità piú alta) e received (priorità èiú bassa). In entrambi i casi viene salvato lo stato e mandato l'ACK. Viene infine chiamata la procedura unlockPCB a cui viene passato l'indice del singolo device che ha generato l'interrupt.
-- resolveNonTerm; stesso funzionamento ma senza la distinzione tra trasmitted e received.
+- resolveNonTerm: stesso funzionamento della resolveTerm ma senza la distinzione tra trasmitted e received.
 
 
                                              
