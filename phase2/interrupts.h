@@ -3,7 +3,7 @@
 
 #include <utils.h>
 
-/* Takes T and N and return the n-th bit of T */
+/* Takes T and N and return the n+1-th bit of T */
 #define NBIT(T,N) ((T & (1 << N)) >> N) 
 
 /* Returns the "interrupt pending" bits of the cause register */

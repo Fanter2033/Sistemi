@@ -10,8 +10,8 @@
 
 #define TERMSUB 2                   /* Sub device for terminal */
 #define ALDEV DEVICECNT + DEVINTNUM   /* Number of (sub)devices semaphores */
-#define SAVESTATE currentProcess->p_s = *BIOSDPState
-#define IDEVCLASS(line) EXT_IL_INDEX(line)*DEVPERINT
+#define SAVESTATE currentProcess->p_s = *BIOSDPState /* Saves the processor' state from the start of BIOSDATAPAGE */
+#define IDEVCLASS(line) EXT_IL_INDEX(line)*DEVPERINT /* Starting index for each class of device semaphores */
 
 
 /*
