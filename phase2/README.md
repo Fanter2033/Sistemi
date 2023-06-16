@@ -6,7 +6,6 @@ Lo scopo della fase 2 del progetto è la realizzazione del livello 3 del S.O. Pa
     - Syscalls
     - Interrupts
     - Traps  
-<br>
 
 # Divisione File
 
@@ -33,7 +32,6 @@ La divisione scelta per i file del progetto è:
     - Device interrupt
 
     Per ognuno, la risoluzione viene affidata al relativo gestore.  
-<br> 
 
 # Scelte progettuali
 Abbiamo scelto di utilizzare un file header per contenere tutte le variabili e le funzioni extern, nonchè le macro utilizzate in tutti i file (utils.h).
@@ -78,31 +76,37 @@ Ogni eccezione viene affidata al gestore corretto:
     Per determinare il tipo di device su cui vorremo fare la richiesta di I/O abbiamo realizzato le funzioni:
     - findLine: Se l'indirizzo del cmdAddress appartiene ad un device (è compreso nella regione dei registri destinati ai dispositivi) allora calcola la linea dell'interrupt relativa al device.  
     
-    > Esempio:   
+    ```C
+    Esempio:  
      cmdAddr = 0x1000254 (Terminale, primo (sub)device)  
      cmdAddr - 0x1000054 = 512  
      512/128 = 4  
      4 + 3 = 7 --> Linea corretta
+    ```
 
     - findDevice: ritorna il subdevice relativo alla linea di interrupt 
 
-    > Esempio:  
+    ```C
+    Esempio:  
      cmdAddr = 0x1000254 (Terminale, primo (sub)device)  
      linea = 7  --> inizio terminali = 0x1000254
      cmdAddr - 0x1000254 = 0  
-     0/8 = 0  --> Numero (sub)device corretto
+     0/8 = 0  --> numero (sub)device corretto
+    ```
 
     Allora l'indice nell'array dei semafori viene calcolato così:  
 
-    >Esempio:  
+    ```C
+    Esempio:  
      cmdAddr = 0x1000254 (Terminale, primo (sub)device)  
      linea = 7, device = 0  
      index = (7-3)*8 + 0 = 32 --> device mappato correttamente
+    ```
 
     Se il device è un non-terminale allora inseriamo il primo valore dell'array cmdValues nel campo command del device in questione, altrimenti distinguiamo due casi (ricezione e trasmissione).
     Infine la funzione esegue un operazione P (interrupts.h), che bloccherà il processo sul semaforo del relativo device.
 
-- getChilren:  
+- getChildren:  
     Nel caso in cui il currentProcess abbia un figlio, la funzione inserisce nell'array passato come parametro il primo figlio. In seguito itera sui fratelli del primogenito. Gli inserimenti nell'array avvengono se e solo se i PID namespace dei figli sono identici a quelli del padre e c'è abbastanza spazio.  
 
 Alcune syscall possono bloccare o meno, quindi ritornano un valore true o false per permetterci di identificare i due casi.
@@ -115,12 +119,14 @@ Memcopy:
 Per trovare la linea dell'interrupt (o più interrupt) attivo facciamo un for da 1 al numero di linee in modo da considerare la priorità. Per trovarla usiamo NBIT.
 
 NBIT è una macro che fornisce l'n+1-esimo bit (da destra) di una stringa:
-> Esempio:  
+```C
+Esempio:  
 Voglio il terzo bit di: 1110  
 (1110 & (1 << 2)) >> 2  
 (1110 & 100) >> 2  
 0100 >> 2 = 01  
-Il valore del terzo bit è 1 
+Il valore del terzo bit è 1
+```
 
 Gli interrupt vengono distinti in tre categorie:
 - interrupt generati dal PLT (linea 1): PLTinterrupt() 
