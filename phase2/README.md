@@ -160,3 +160,5 @@ nuova configurazione su umps3 selezionare la directory "machine" .
 Gestione interrupt non ottimizzata (si possono controllare anche gli interrupt con priorità inferiore arrivati durante la gestione di un interrupt)
 
 Gestione dell'interval timer: andrebbe aumentato psecond, poichè non considera 100 ms ma un "ciccinino" di meno. 
+
+Le systemcall dovrebbero essere static per una questione di sicurezza

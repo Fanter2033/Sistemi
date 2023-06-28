@@ -22,38 +22,38 @@ void syscallExcHandler();
 
 /* Creates a new process and sets its state, support structure and
  namespace (if ns is NULL its set to the parent one) */
-int createProcess(state_t *statep, support_t *supportp, nsd_t *ns);
+static int createProcess(state_t *statep, support_t *supportp, nsd_t *ns);
 
 /* Terminates either the current process or the process with pid "pid" 
 and (recursively) their progeny */
-void terminateProcess(int pid);
+static void terminateProcess(int pid);
 
 /* Performs a P operation on the semaphore pointed by sem */
-bool Passeren(int *sem);
+static bool Passeren(int *sem);
 
 /* Performs a V operation on the semaphore pointed by sem */
-bool Verhogen(int *sem);
+static bool Verhogen(int *sem);
 
 /* Performs an Input/Output operation on device at cmdAddress with the values in cmdValues. 
     Returns 0 if the operation is successful*/
-int DO_IO(int *cmdAddr, int *cmdValues);
+static int DO_IO(int *cmdAddr, int *cmdValues);
 
 /* Returns the processor time used by the requesting process */
-cpu_t getTime();
+static cpu_t getTime();
 
 /* Performs a P on the pseudoClock semaphore*/
-void waitForClock();
+static void waitForClock();
 
 /* Returns a pointer to the support structure of the requesting process */
-support_t* getSupportData();
+static support_t* getSupportData();
 
 /* Returns the PID either of the requesting process or its parent one 
     (it returns 0 if parent and child are not in the same namespace)*/
-int getProcessID(int parent);
+static int getProcessID(int parent);
 
 /* Returns the number of children in the same PID ns as the requesting process, furthermore
  it loads the "children" array with the process' children until size "size" */
-int getChildren(int *children, int size);
+static int getChildren(int *children, int size);
 
 /*-- Additional Functions --*/
 

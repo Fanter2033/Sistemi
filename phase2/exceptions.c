@@ -100,7 +100,7 @@ void syscallExcHandler(){
 }
 
 
-int createProcess(state_t *statep, support_t *supportp, nsd_t *ns){
+static int createProcess(state_t *statep, support_t *supportp, nsd_t *ns){
     pcb_t* newProc = allocPcb();
     if (newProc == NULL) /* no PCB to assign */
         return 0;
@@ -129,7 +129,7 @@ int createProcess(state_t *statep, support_t *supportp, nsd_t *ns){
     return PID;
 }
 
-void terminateProcess(int pid){
+static void terminateProcess(int pid){
     processCount--;                                                                   
     pcb_t* proc = (pid==0||pid==currentProcess->p_pid)?currentProcess:findPCB_pid(pid,(&readyQueue));
     outChild(proc);                                                                             /* the process is separated from its parent */    
@@ -153,7 +153,7 @@ void terminateProcess(int pid){
     }                                         
 }
 
-bool Passeren(int* sem){
+static bool Passeren(int* sem){
 
     if (*sem == 0){     /* blocking */
         /* current process enters in block state */
@@ -173,7 +173,7 @@ bool Passeren(int* sem){
 }
 
 
-bool Verhogen(int* sem){
+static bool Verhogen(int* sem){
     if((*sem) == 1){    /* blocking */
         /* current process enters in block state*/
         insertBlocked(sem,currentProcess);
@@ -191,7 +191,7 @@ bool Verhogen(int* sem){
 }
 
 
-int DO_IO(int *cmdAddr, int *cmdValues){
+static int DO_IO(int *cmdAddr, int *cmdValues){
     currentProcess->valueAddr = (unsigned int *)cmdValues;
 
     /* find the correct device for I/O from its address */
@@ -238,12 +238,12 @@ int findDevice(int line,int* cmdAddr){
 }
 
 
-cpu_t getTime(){
+static cpu_t getTime(){
     return (currentProcess->p_time);
 }
 
 
-void waitForClock(){
+static void waitForClock(){
     if(pseudoClockSem == 0){
         insertBlocked(&pseudoClockSem, currentProcess);
         SBcount++;
@@ -251,12 +251,12 @@ void waitForClock(){
 }
 
 
-support_t* getSupportData(){
+static support_t* getSupportData(){
     return currentProcess->p_supportStruct;
 }
 
 
-int getProcessID(int parent){
+static int getProcessID(int parent){
     if (parent){
         nsd_t* ns = getNamespace(currentProcess, NS_PID);
         if (ns == getNamespace(currentProcess->p_parent,NS_PID)) /*checks if they belong to the same namespace */
@@ -268,7 +268,7 @@ int getProcessID(int parent){
 }
 
 
-int getChildren(int* children, int size){
+static int getChildren(int* children, int size){
     int valueToReturn = 0;                                                                      
     if (!emptyChild(currentProcess)){                                                           /* check if pcb has children*/
         pcb_t* firstChild = list_first_entry(&currentProcess->p_child,struct pcb_t,p_child);    
