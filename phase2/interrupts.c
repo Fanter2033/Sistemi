@@ -58,7 +58,7 @@ void resolveTerm(int line, int device){
     if(termReg->transm_status > READY && termReg->transm_status != BUSY){
         unsigned int status = (termReg->transm_status) & TERMSTATMASK;           /* save off the status from device register */
         termReg->transm_command = ACK ;                                          /* ACK the interrupt */
-        indexDevice = (IDEVCLASS(line))+(TERMSUB*device) + 1;       /* find the correct device */
+        indexDevice = (IDEVCLASS(line))+(TERMSUB*device) + 1;                    /* find the correct device */
         unlockPCB(indexDevice, status);
     }
 
@@ -73,10 +73,10 @@ void resolveTerm(int line, int device){
 void resolveNonTerm(int line, int device){
     dtpreg_t* devReg = (dtpreg_t*)(DEV_REG_ADDR( line, device));
 
-    if(devReg->status > READY && devReg->status != BUSY){
+    if(devReg->status == READY){
         unsigned int status = devReg -> status;                     /* save off the status from device register */
         devReg->command = ACK;                                      /* ACK the interrupt */
-        int indexDevice = ((EXT_IL_INDEX(line))*DEVPERINT)+ device; /* find the correct device */
+        int indexDevice = IDEVCLASS(line) + device;                 /* find the correct device */
         unlockPCB(indexDevice, status);
     }
     
@@ -114,7 +114,7 @@ void PLTinterrupt(){
         scheduler();
     }
 }
-
+/* PSECOND should be adjusted in order to consider the time spent inside interruptHandler */
 void ITinterrupt(){
     LDIT(PSECOND);                                          /* ack the interrupt */
     while(headBlocked(&pseudoClockSem) != NULL){            /* unlock ALL processes */

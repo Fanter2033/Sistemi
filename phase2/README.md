@@ -153,3 +153,10 @@ Per eliminare i file creati dal make si utilizza ` make clean `.
 
 I file riguardanti umps vengono creati nella cartella machine. Dunque per creare una 
 nuova configurazione su umps3 selezionare la directory "machine" . 
+
+
+# Note post discussione
+
+Gestione interrupt non ottimizzata (si possono controllare anche gli interrupt con priorità inferiore arrivati durante la gestione di un interrupt)
+
+Gestione dell'interval timer: andrebbe aumentato psecond, poichè non considera 100 ms ma un "ciccinino" di meno. 

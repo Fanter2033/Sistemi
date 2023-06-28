@@ -23,7 +23,7 @@ void exceptionHandler(){
 
 void syscallExcHandler(){
     BIOSDPState->pc_epc +=WORDLEN;                              /* increase PC to avoid loop on Syscall */
-    if (((getSTATUS() & STATUS_KUc)>>STATUS_KUc_BIT) == ON){    /* check if process is in Kernel Mode */
+    if (((getSTATUS() & STATUS_KUp)>>STATUS_KUp_BIT) == ON){    /* check if process is in Kernel Mode */
 
         BIOSDPState->cause = ((EXC_RI << CAUSE_EXCCODE_BIT));   /* set ExcCode to RI */
         passUporDie(GENERALEXCEPT);                             /* call Program Trap Handler */
@@ -205,6 +205,8 @@ int DO_IO(int *cmdAddr, int *cmdValues){
     else if (indexDevice < (DEVICECNT-DEVPERINT)){  /* non-terminal device */
         dtpreg_t* dev = (dtpreg_t*)(cmdAddr);
         dev->command = cmdValues[COMMAND];
+        dev->data0 = cmdValues[DATA0];
+        dev->data1 = cmdValues[DATA1];
     }
     else {                                          /* terminal device */
         termreg_t* terminal;
@@ -309,13 +311,4 @@ void updateCPUtime(){
     unsigned int tod;
     STCK(tod);
     currentProcess->p_time += (cpu_t)(tod - processStartTime);
-}
-
-
-void memcpy(void *dest, const void *src, unsigned long n)
-{
-    for (unsigned long i = 0; i < n; i++)
-    {
-        ((char*)dest)[i] = ((char*)src)[i];
-    }
 }

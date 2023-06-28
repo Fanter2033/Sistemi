@@ -70,7 +70,4 @@ void passUporDie(int indexValue);
 /* Sets the currentProcess' time */
 void updateCPUtime();
 
-/* Additional function that copies n characters from memory area src to memory area dest */
-void memcpy(void *dest, const void *src, unsigned long n);
-
 #endif

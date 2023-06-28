@@ -48,4 +48,10 @@ extern void scheduler();
 extern void interruptHandler();
 extern void P(int* sem);
 
+/* ---- Additional Functions ---- */
+
+/* Copies n characters from memory area src to memory area dest, used for copying structures */
+void memcpy(void *dest, const void *src, unsigned long n);
+
+
 #endif
